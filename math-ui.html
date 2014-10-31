@@ -1,0 +1,72 @@
+<style>
+math-ui {
+    position: relative;
+    border: 0.2em solid transparent;
+    border-radius: 0.5em;
+    padding: 0.1em;
+    margin: -0.3em;
+    outline: none;
+    cursor: pointer;
+    display: inline-block;
+}
+math-ui[display="block"] {
+    display: block;
+    text-align: center;
+}
+math-ui:hover {
+    border: 0.2em solid #afbfff;
+}
+math-ui:focus {
+    border: 0.2em solid #4f9fcf;
+}
+</style>
+<script>
+(function() {
+
+    var element = Object.create(HTMLElement.prototype);
+
+    function getMathNode(el) {
+        var children = Array.prototype.filter.call(el.childNodes, function (item) {
+            return item.nodeType !== Node.TEXT_NODE || item.nodeValue.trim();
+        });
+        return children.length === 1 ? children[0] : null;
+    }
+
+    function detectDisplayMode(el) {
+        var mathNode = getMathNode(el);
+        if (!mathNode)
+            return null;
+        if (mathNode.tagName === 'math')
+            return mathNode.getAttribute('display');
+        if (mathNode.getDisplay)
+            return mathNode.getDisplay();
+        return null;
+    }
+
+    function domReady(el) {
+        if (!el.hasAttribute('display')) {
+            var display = el.use && el.use.getDisplay ? el.use.getDisplay() : detectDisplayMode(el);
+            if (display)
+                el.setAttribute('display', display);
+        }
+    }
+
+    element.createdCallback = function () {
+        this.tabIndex = 0;
+        if (this.hasAttribute('use'))
+            this.use = document.createElement(this.getAttribute('use'));
+        if (this.use && this.use.createdCallback)
+            this.use.createdCallback.call(this);
+    };
+
+    element.attachedCallback = function () {
+        if (this.use && this.use.attachedCallback)
+            this.use.attachedCallback.call(this);
+        var self = this;
+        requestAnimationFrame(function () { domReady(self); });
+    };
+
+    document.registerElement('math-ui', { prototype: element });
+
+})();
+</script>

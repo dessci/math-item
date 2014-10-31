@@ -1,21 +1,68 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>&lt;math-ui&gt;</title>
 
-    <script src="bower_components/webcomponentsjs/webcomponents.js"></script>
-    <link rel="import" href="src/math-ui.html">
+    <script src="webcomponents.js"></script>
+    <link rel="import" href="math-ui.html">
+    <link rel="import" href="math-tex.html">
+    <link rel="import" href="math-mml.html">
+    <link rel="import" href="eqnstore-item.html">
+    <style>
+        main {
+            width: 60em;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
 </head>
 <body>
+    <main>
+        <h3>Plain HTML</h3>
 
-    <p>Some paragraph with <math-ui>
-        <math><mi>x</mi></math>
-    </math-ui> inline math</p>
+        <p>A paragraph with <math-ui>x<sup>2</sup></math-ui> inline math</p>
 
-    <math-ui display="block">
-        <math><mi>x</mi></math>
-    </math-ui>
+        <math-ui display="block">
+            x<sub>k</sub>
+        </math-ui>
 
+        <h3>MathML</h3>
+
+        <p>A paragraph with <math-ui><math><msup><mi>x</mi><mn>2</mn></msup></math></math-ui> inline math</p>
+
+        <math-ui>
+            <math display="block">
+                <mrow><mi>x</mi><mo>+</mo><mi>y</mi></mrow>
+            </math>
+        </math-ui>
+
+        <h3><code>&lt;math-tex&gt;</code> (TeX/MathJax)</h3>
+
+        <p>A paragraph with <math-ui><math-tex>\sin(x)</math-tex></math-ui> inline math</p>
+
+        <math-ui>
+            <math-tex mode="display">\sum_{k=1}^n k^2</math-tex>
+        </math-ui>
+
+        <h3><code>&lt;math-mml&gt;</code> (MathML/MathJax)</h3>
+
+        <p>A paragraph with <math-ui use="math-mml"><math><msup><mi>x</mi><mn>2</mn></msup></math></math-ui> inline math</p>
+
+        <math-ui use="math-mml">
+            <math display="block">
+                <mrow><mi>x</mi><mo>+</mo><mi>y</mi></mrow>
+            </math>
+        </math-ui>
+
+        <h3>EqnStore</h3>
+
+        <p>A paragraph with <math-ui><eqnstore-item eqn="677f87b8abc33a364dd9776669b31b604547df3d;4.77;-0.12"></eqnstore-item></math-ui> inline math</p>
+
+        <math-ui display="block">
+            <eqnstore-item eqn="bf585ace6f7655d8dfe64546ebda20cf991bb59c;22.98;-2.27"></eqnstore-item>
+        </math-ui>
+
+    </main>
 </body>
 </html>

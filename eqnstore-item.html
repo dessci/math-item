@@ -1,0 +1,21 @@
+﻿<script>
+(function() {
+    var element = Object.create(HTMLElement.prototype);
+
+    function trim(s) { return s.trim(); }
+
+    element.createdCallback = function () {
+        var eqn = this.getAttribute('eqn');
+        if (!eqn) return;
+        var items = eqn.split(';').map(trim);
+        if (items.length !== 3) return;
+        var img = document.createElement('img');
+        img.src = 'http://mathwiz.cloudapp.net/' + items[0] + '/png/64';
+        img.style.width = items[1] + 'em';
+        img.style.verticalAlign = items[2] + 'em';
+        this.createShadowRoot().appendChild(img);
+    };
+
+    document.registerElement('eqnstore-item', {prototype: element});
+})();
+</script>
