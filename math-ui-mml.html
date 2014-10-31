@@ -1,0 +1,18 @@
+﻿<script>
+(function() {
+
+    var element = Object.create(HTMLElement.prototype);
+
+    element.getSourceTypes = function () {
+        return ['application/mathml+xml'];
+    };
+
+    element.getDisplay = function () {
+        var mathNode = this.querySelector('math');
+        return mathNode ? mathNode.getAttribute('display') : null;
+    };
+
+    document.registerElement('math-ui-mml', {prototype: element});
+
+})();
+</script>

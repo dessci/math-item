@@ -1,0 +1,30 @@
+﻿<template>
+    <dialog>
+        <p>My test dialog.</p>
+    </dialog>
+</template>
+
+<script>
+(function () {
+
+    var importDoc = (document._currentScript ? document._currentScript : document.currentScript).ownerDocument;
+    var elements = [];
+    var element = Object.create(HTMLElement.prototype);
+
+    element.addItem = function (item) {
+        elements.push(item);
+        console.log('controller addItem');
+    };
+
+    element.show = function () {
+        var t = importDoc.querySelector('template');
+        var dialog = t.content.querySelector('dialog').cloneNode(true);
+        console.log('show', dialog);
+        document.body.appendChild(dialog);
+        dialog.showModal();
+    };
+
+    document.registerElement('math-ui-controller', {prototype: element});
+
+})();
+</script>

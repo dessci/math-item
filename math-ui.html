@@ -1,3 +1,7 @@
+<link rel="import" href="math-ui-controller.html">
+<link rel="import" href="math-ui-plain.html">
+<link rel="import" href="math-ui-mml.html">
+
 <style>
 math-ui {
     position: relative;
@@ -20,53 +24,53 @@ math-ui:focus {
     border: 0.2em solid #4f9fcf;
 }
 </style>
+
 <script>
 (function() {
 
     var element = Object.create(HTMLElement.prototype);
+    var controller;
 
-    function getMathNode(el) {
-        var children = Array.prototype.filter.call(el.childNodes, function (item) {
-            return item.nodeType !== Node.TEXT_NODE || item.nodeValue.trim();
-        });
-        return children.length === 1 ? children[0] : null;
-    }
-
-    function detectDisplayMode(el) {
-        var mathNode = getMathNode(el);
-        if (!mathNode)
-            return null;
-        if (mathNode.tagName === 'math')
-            return mathNode.getAttribute('display');
-        if (mathNode.getDisplay)
-            return mathNode.getDisplay();
-        return null;
-    }
-
-    function domReady(el) {
-        if (!el.hasAttribute('display')) {
-            var display = el.use && el.use.getDisplay ? el.use.getDisplay() : detectDisplayMode(el);
+    element.domReady = function () {
+        if (!this.handler) {
+            var mathNode = this.firstElementChild;
+            if (mathNode && mathNode.tagName === 'math') {
+                this.handler = document.createElement('math-ui-mml');
+                this.ownHandler = true;
+            } else if (mathNode && mathNode.getSourceTypes) {
+                this.handler = mathNode;
+            } else {
+                this.handler = document.createElement('math-ui-plain');
+                this.ownHandler = true;
+            }
+        }
+        if (!this.hasAttribute('display') && this.handler.getDisplay) {
+            var display = this.ownHandler ? this.handler.getDisplay.call(this) : this.handler.getDisplay();
             if (display)
-                el.setAttribute('display', display);
+                this.setAttribute('display', display);
         }
     }
 
     element.createdCallback = function () {
         this.tabIndex = 0;
-        if (this.hasAttribute('use'))
-            this.use = document.createElement(this.getAttribute('use'));
-        if (this.use && this.use.createdCallback)
-            this.use.createdCallback.call(this);
+        if (this.hasAttribute('use')) {
+            this.handler = document.createElement(this.getAttribute('use'));
+            this.ownHandler = true;
+            if (this.handler.createdCallback)
+                this.handler.createdCallback.call(this);
+        }
     };
 
     element.attachedCallback = function () {
-        if (this.use && this.use.attachedCallback)
-            this.use.attachedCallback.call(this);
-        var self = this;
-        requestAnimationFrame(function () { domReady(self); });
+        if (!controller)
+            controller = document.createElement('math-ui-controller');
+        controller.addItem(this);
+        if (this.handler && this.handler.attachedCallback)
+            this.handler.attachedCallback.call(this);
+        requestAnimationFrame(this.domReady.bind(this));
     };
 
-    document.registerElement('math-ui', { prototype: element });
+    document.registerElement('math-ui', {prototype: element});
 
 })();
 </script>

@@ -28,6 +28,15 @@
         update(this._jax, this.querySelector('math'));
     };
 
+    element.getDisplay = function () {
+        var mathNode = this.querySelector('math');
+        return mathNode ? mathNode.getAttribute('display') : null;
+    };
+
+    element.getSourceTypes = function () {
+        return ['application/mathml+xml'];
+    };
+
     document.registerElement('math-mml', {prototype: element});
 })();
 </script>
