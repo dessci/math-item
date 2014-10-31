@@ -9,13 +9,14 @@
 </head>
 <body>
 
-    <p>Some paragraph with <math-ui>
-        <math><mi>x</mi></math>
-    </math-ui> inline math</p>
+    <p>Some paragraph with <math-ui><math><msup><mi>x</mi><mn>2</mn></msup></math></math-ui>
+    inline math</p>
 
     <math-ui display="block">
-        <math><mi>x</mi></math>
+        <math display="block">
+            <mrow><mi>x</mi><mo>+</mo><mi>y</mi></mrow>
+        </math>
     </math-ui>
-
+    
 </body>
 </html>

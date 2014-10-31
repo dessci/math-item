@@ -7,7 +7,7 @@ math-ui {
     margin: -0.3em;
     outline: none;
     cursor: pointer;
-    display: inline;
+    display: inline-block;
 }
 math-ui[display="block"] {
     display: block;
@@ -24,15 +24,25 @@ math-ui:focus {
 
     var element = Object.create(HTMLElement.prototype);
 
-    element.createdCallback = function() {
+    element.createdCallback = function () {
         var root = this.createShadowRoot();
         var c = document.createElement('content');
         root.appendChild(c);
         this.tabIndex = 0;
     };
 
-    /*element.attachedCallback = function() {};
-    element.detachedCallback = function() {};
+    element.attachedCallback = function () {
+        var children = Array.prototype.filter.call(this.childNodes, function (item) {
+            return item.nodeType !== Node.TEXT_NODE || item.nodeValue.trim().length > 0;
+        });
+        console.log('attached', children);
+        if (children.length === 1) {
+            var c = children[0];
+            console.log('display', c.getAttribute('display'));
+        }
+    };
+    
+    /*element.detachedCallback = function() {};
     element.attributeChangedCallback = function(attr, oldVal, newVal) {};*/
 
     document.registerElement('math-ui', {prototype: element});
