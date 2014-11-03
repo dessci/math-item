@@ -1,27 +1,56 @@
-﻿<template>
-    <dialog>
-        <p>My test dialog.</p>
+﻿<link rel="import" href="math-ui-dialog.html" />
+
+<style>
+    dialog.math-ui.page-menu {
+        width: 15em;
+    }
+</style>
+
+<template>
+    <dialog class="math-ui page-menu">
+        <div class="header">MathUI menu</div>
+        <div class="content">
+            <button>Highlight All Equations</button>
+            <button>Action 2</button>
+            <button>Action 3</button>
+            <button>Action 4</button>
+        </div>
+        </div>
     </dialog>
 </template>
 
 <script>
 (function () {
+    'use strict';
 
     var importDoc = (document._currentScript ? document._currentScript : document.currentScript).ownerDocument;
+    var mathUIDialog = document.createElement('math-ui-dialog');
     var elements = [];
     var element = Object.create(HTMLElement.prototype);
 
     element.addItem = function (item) {
         elements.push(item);
-        console.log('controller addItem');
+        return '' + elements.length;
     };
 
-    element.show = function () {
-        var t = importDoc.querySelector('template');
-        var dialog = t.content.querySelector('dialog').cloneNode(true);
-        console.log('show', dialog);
-        document.body.appendChild(dialog);
-        dialog.showModal();
+    element.toggleHighlightAll = function () {
+        elements.forEach(function (el) {
+            el.classList.toggle('highlight');
+        });
+    };
+
+    element.showMenu = function () {
+        var tmpl = importDoc.querySelector('template');
+        var node = document.importNode(tmpl.content, true);
+        var buttons = node.querySelectorAll('button');
+        var dialog = mathUIDialog.showModal(node);
+        var self = this;
+        function toggleHighlightAll(ev) {
+            ev.stopPropagation();
+            self.toggleHighlightAll();
+            dialog.close();
+        }
+        buttons[0].addEventListener('click', toggleHighlightAll);
     };
 
     document.registerElement('math-ui-controller', {prototype: element});

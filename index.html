@@ -83,7 +83,7 @@
                 <li><i class="fa fa-list fa-fw"></i> <a href="#">All posts</a></li>
                 <li><i class="fa fa-twitter fa-fw"></i> <a href="#">@myusername</a></li>
                 <li><i class="fa fa-rss fa-fw"></i> <a href="#">Subscribe in a reader</a></li>
-                <li><i class="fa fa-superscript fa-fw"></i> <a id="unimath-dashboard-trigger" href="#">UniMath Dashboard</a></li>
+                <li><i class="fa fa-superscript fa-fw"></i> <a id="unimath-dashboard-trigger" href="#">Florian Dashboard</a></li>
             </ul>
         </aside>
     </div>
@@ -92,8 +92,9 @@
             var trigger = document.getElementById('unimath-dashboard-trigger');
             var controller = document.querySelector('math-ui-controller');
             trigger.addEventListener('click', function (ev) {
-                controller.show();
                 ev.preventDefault();
+                ev.stopPropagation();
+                controller.showMenu();
             });
         })();
     </script>

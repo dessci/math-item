@@ -1,33 +1,53 @@
 <link rel="import" href="math-ui-controller.html">
+<link rel="import" href="math-ui-dialog.html" />
 <link rel="import" href="math-ui-plain.html">
 <link rel="import" href="math-ui-mml.html">
 
 <style>
-math-ui {
-    position: relative;
-    border: 0.2em solid transparent;
-    border-radius: 0.5em;
-    padding: 0.1em;
-    margin: -0.3em;
-    outline: none;
-    cursor: pointer;
-    display: inline-block;
-}
-math-ui[display="block"] {
-    display: block;
-    text-align: center;
-}
-math-ui:hover {
-    border: 0.2em solid #afbfff;
-}
-math-ui:focus {
-    border: 0.2em solid #4f9fcf;
-}
+    math-ui {
+        position: relative;
+        border: 0.1em solid transparent;
+        border-radius: 0.2em;
+        padding: 0.1em;
+        margin: -0.3em;
+        outline: none;
+        cursor: pointer;
+        display: inline-block;
+    }
+    math-ui[display="block"] {
+        display: block;
+        text-align: center;
+    }
+    math-ui:hover, math-ui.highlight {
+        border: 0.1em solid #afbfff;
+    }
+    math-ui:focus {
+        border: 0.1em solid #4f9fcf;
+    }
+    dialog.math-ui.item-menu {
+        width: 15em;
+    }
 </style>
 
-<script>
-(function() {
+<template>
+    <dialog class="math-ui item-menu">
+        <div class="header">Equation item</div>
+        <div class="content">
+            <button>View Source</button>
+            <button>Search</button>
+            <button>Share</button>
+            <button>Florian Dashboard</button>
+        </div>
+        </div>
+    </dialog>
+</template>
 
+<script>
+(function () {
+    'use strict';
+
+    var importDoc = (document._currentScript ? document._currentScript : document.currentScript).ownerDocument;
+    var mathUIDialog = document.createElement('math-ui-dialog');
     var element = Object.create(HTMLElement.prototype);
     var controller;
 
@@ -51,6 +71,21 @@ math-ui:focus {
         }
     }
 
+    element.showMenu = function () {
+        var tmpl = importDoc.querySelector('template');
+        var node = document.importNode(tmpl.content, true);
+        if (this.eqnId)
+            node.querySelector('.header').innerHTML = 'Equation ' + this.eqnId;
+        var buttons = node.querySelectorAll('button');
+        var dialog = mathUIDialog.showModal(node);
+        function showDashboard(ev) {
+            ev.stopPropagation();
+            dialog.close();
+            controller.showMenu();
+        }
+        buttons[3].addEventListener('click', showDashboard);
+    };
+
     element.createdCallback = function () {
         this.tabIndex = 0;
         if (this.hasAttribute('use')) {
@@ -64,9 +99,15 @@ math-ui:focus {
     element.attachedCallback = function () {
         if (!controller)
             controller = document.createElement('math-ui-controller');
-        controller.addItem(this);
+        this.eqnId = controller.addItem(this);
         if (this.handler && this.handler.attachedCallback)
             this.handler.attachedCallback.call(this);
+        var self = this;
+        function showMenu(ev) {
+            ev.stopPropagation();
+            self.showMenu();
+        }
+        this.addEventListener('click', showMenu);
         requestAnimationFrame(this.domReady.bind(this));
     };
 

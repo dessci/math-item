@@ -1,5 +1,7 @@
 <script>
 (function() {
+    'use strict';
+
     var states = {
         start: 'start', configured: 'configured', loading: 'loading', ready: 'ready', error: 'error'
     };
@@ -41,7 +43,7 @@
         }
         if (state === states.configured) {
             state = states.loading;
-            MathJax = {
+            window.MathJax = {
                 skipStartupTypeset: true,
                 //jax: ["input/TeX", "output/HTML-CSS"],
                 jax: ["input/TeX", "input/MathML", "output/HTML-CSS"],
