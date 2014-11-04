@@ -1,0 +1,71 @@
+﻿<template>
+    <style>
+        :host {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #d6e3e7;
+            font-family: sans-serif;
+            font-size: 80%;
+            white-space: nowrap;
+            z-index: 99999;
+        }
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: inline-block;
+        }
+        ul > li {
+            display: inline-block;
+            padding: 0.5em;
+        }
+        ul > li:hover {
+            background-color: #eaf1f3;
+        }
+        span {
+            background-color: #4f7dc9;
+            color: white;
+            padding: 0.5em;
+        }
+    </style>
+    <span>Equation</span><ul><li>Zoom</li><li>Source</li><li>Search</li><li>Share</li><li>Dashboard</li></ul>
+</template>
+
+<script>
+(function() {
+    'use strict';
+
+    var importDoc = (document._currentScript ? document._currentScript : document.currentScript).ownerDocument;
+    var element = Object.create(HTMLElement.prototype);
+
+    element.createdCallback = function () {
+        var tmpl = importDoc.querySelector('template');
+        var frag = document.importNode(tmpl.content, true);
+        if (window.WebComponents && WebComponents.ShadowCSS) {
+            var style = frag.querySelector('style');
+            frag.removeChild(style);
+            var cssText = WebComponents.ShadowCSS.shimCssText(style.textContent, 'math-ui-eqn-menu');
+            WebComponents.ShadowCSS.addCssToDocument(cssText);
+        }
+        this.createShadowRoot().appendChild(frag);
+    };
+
+    element.attachedCallback = function () {
+        var self = this;
+        this.shadowRoot.addEventListener('click', function (ev) {
+            alert(ev.target.innerHTML);
+            self.parent.blur();
+        }, false);
+    };
+
+    element.setParent = function (elem) {
+        this.parent = elem;
+        if (this.parent.eqnId)
+            this.shadowRoot.querySelector('span').innerHTML = 'Equation ' + this.parent.eqnId;
+    };
+
+    document.registerElement('math-ui-eqn-menu', { prototype: element });
+
+})();
+</script>
