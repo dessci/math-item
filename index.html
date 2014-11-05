@@ -5,18 +5,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>&lt;math-ui&gt;</title>
-
-    <script> 
-        var $buoop = {vs:{i:9,f:25,o:17,s:6},c:2}; 
-        function $buo_f(){ 
-         var e = document.createElement("script"); 
-         e.src = "//browser-update.org/update.js"; 
-         document.body.appendChild(e);
-        };
-        try {document.addEventListener("DOMContentLoaded", $buo_f,false)}
-        catch(e){window.attachEvent("onload", $buo_f)}
-    </script> 
-
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
     <script src="webcomponents.js"></script>
     <link rel="import" href="math-ui.html">
@@ -32,7 +20,7 @@
         <main>
             <h3>Plain HTML</h3>
 
-            <p>A paragraph with <math-ui>x<sup>2</sup><!--math-ui-eqn-menu></math-ui-eqn-menu--></math-ui> inline math</p>
+            <p>A paragraph with <math-ui>x<sup>2</sup><!--<math-ui-eqn-menu></math-ui-eqn-menu>--></math-ui> inline math</p>
 
             <math-ui display="block">
                 x<sub>k</sub>
@@ -93,8 +81,9 @@
             var controller = document.querySelector('math-ui-controller');
             trigger.addEventListener('click', function (ev) {
                 ev.preventDefault();
-                ev.stopPropagation();
-                controller.showMenu();
+                setTimeout(function () {
+                    controller.showMenu();
+                }, 0);
             });
         })();
     </script>

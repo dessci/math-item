@@ -35,6 +35,11 @@
     var element = Object.create(HTMLElement.prototype);
     var controller;
 
+    function async(fn) {
+        requestAnimationFrame(fn);
+        //setTimeout(fn, 0);
+    }
+
     element.domReady = function () {
         if (!this.handler) {
             var mathNode = this.firstElementChild;
@@ -56,10 +61,29 @@
     }
 
     element.showMenu = function () {
-        var menu = document.createElement('math-ui-eqn-menu');
-        (this.shadowRoot ? this.shadowRoot : this).appendChild(menu);
-        menu.style.top = (this.offsetHeight - 3) + 'px';
-        menu.setParent(this);
+        this.menu = document.createElement('math-ui-eqn-menu');
+        (this.shadowRoot ? this.shadowRoot : this).appendChild(this.menu);
+        this.menu.style.top = (this.offsetHeight - 3) + 'px';
+    };
+
+    element.zoomAction = function () {
+        alert('zoom');
+    };
+
+    element.sourceAction = function () {
+        alert('source');
+    };
+
+    element.searchAction = function () {
+        alert('search');
+    };
+
+    element.shareAction = function () {
+        alert('share');
+    };
+
+    element.showDashboard = function () {
+        controller.showMenu();
     };
 
     element.removeMenu = function () {
@@ -67,6 +91,7 @@
         Array.prototype.forEach.call(parent.querySelectorAll('math-ui-eqn-menu'), function (el) {
             parent.removeChild(el);
         });
+        this.menu = null;
     };
 
     element.createdCallback = function () {
@@ -83,18 +108,20 @@
         if (!controller)
             controller = document.createElement('math-ui-controller');
         this.eqnId = controller.addItem(this);
+        this.menu = null;
         if (this.handler && this.handler.attachedCallback)
             this.handler.attachedCallback.call(this);
         var self = this;
-        function focus(ev) {
-            self.showMenu();
-        }
-        function blur(ev) {
-            self.removeMenu();
-        }
-        this.addEventListener('focus', focus, false);
-        this.addEventListener('blur', blur, false);
-        requestAnimationFrame(this.domReady.bind(this));
+        this.addEventListener('focus', function (ev) { self.showMenu(); }, false);
+        this.addEventListener('blur', function (ev) { self.removeMenu(); }, false);
+        this.addEventListener('keydown', function (ev) {
+            if (!self.menu) return;
+            if (ev.keyCode === 39) self.menu.navNext();
+            else if (ev.keyCode === 37) self.menu.navPrev();
+            else if (ev.keyCode === 13) async(function () { self.menu.triggerSelection(); });
+            else console.log('keydown', ev.keyCode);
+        }, false);
+        async(this.domReady.bind(this));
     };
 
     document.registerElement('math-ui', {prototype: element});

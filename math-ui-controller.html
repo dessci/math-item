@@ -28,6 +28,10 @@
     var elements = [];
     var element = Object.create(HTMLElement.prototype);
 
+    function async(fn) {
+        requestAnimationFrame(fn);
+    }
+
     element.addItem = function (item) {
         elements.push(item);
         return '' + elements.length;
@@ -46,9 +50,10 @@
         var dialog = mathUIDialog.showModal(node);
         var self = this;
         function toggleHighlightAll(ev) {
-            ev.stopPropagation();
-            self.toggleHighlightAll();
-            dialog.close();
+            async(function () {
+                self.toggleHighlightAll();
+                dialog.close();
+            });
         }
         buttons[0].addEventListener('click', toggleHighlightAll);
     };
