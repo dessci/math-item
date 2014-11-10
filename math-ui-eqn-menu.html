@@ -7,7 +7,7 @@
             font-family: sans-serif;
             font-size: 80%;
             white-space: nowrap;
-            z-index: 99999;
+            z-index: 1;
         }
         .header {
             background-color: #4f7dc9;
@@ -39,6 +39,8 @@
 <script>
 (function() {
     'use strict';
+
+    console.log('math-ui-eqn-menu');
 
     var actions = ['zoomAction', 'sourceAction', 'searchAction', 'shareAction', 'showDashboard'];
 
@@ -94,8 +96,8 @@
         this.shadowRoot.addEventListener('click', function (ev) {
             var items = this.querySelectorAll('.item');
             var index = Array.prototype.indexOf.call(items, ev.target);
-            if (index >= 0)
-                select(self, index);
+            if (index < 0) return;
+            select(self, index);
             async(function () { self.triggerSelection(); });
         }, false);
     };

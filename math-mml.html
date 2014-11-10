@@ -39,6 +39,14 @@
         return ['application/mathml+xml'];
     };
 
-    document.registerElement('math-mml', {prototype: element});
+    element.clonePresentation = function (dest) {
+        var clone = document.createElement('math-mml');
+        var math = this.querySelector('math');
+        if (math)
+            clone.appendChild(math.cloneNode(true));
+        dest.appendChild(clone);
+    };
+
+    document.registerElement('math-mml', { prototype: element });
 })();
 </script>

@@ -50,6 +50,8 @@
 (function () {
     'use strict';
 
+    console.log('math-ui-dialog');
+
     if (document.createElement('dialog') instanceof HTMLUnknownElement) {
         var importDoc = (document._currentScript ? document._currentScript : document.currentScript).ownerDocument;
         var head = document.querySelector('head');
@@ -61,27 +63,36 @@
 
     var element = Object.create(HTMLElement.prototype);
 
-    element.showModal = function (node) {
-        var dialog = node.querySelector('dialog');
-        document.body.appendChild(node);
+    function isAncestorOf(ancestor, node) {
+        while (node) {
+            if (ancestor === node)
+                return true;
+            node = node.parentNode;
+        }
+        return false;
+    }
+
+    element.showModal = function (dialog, handler) {
+        document.body.appendChild(dialog);
         if (!dialog.showModal && window.dialogPolyfill) {
-            window.dialogPolyfill.registerDialog(dialog);
+            dialogPolyfill.registerDialog(dialog);
         }
         dialog.showModal();
-        function documentClick() {
-            dialog.close();
-            document.body.removeChild(dialog);
+        function onDocumentClick(ev) {
+            if (!handler || !isAncestorOf(dialog, ev.target) || handler(ev))
+                dialog.close();
         }
         function onClose() {
-            document.removeEventListener('click', documentClick);
+            document.removeEventListener('click', onDocumentClick);
             dialog.removeEventListener('close', onClose);
+            document.body.removeChild(dialog);
         }
-        document.addEventListener('click', documentClick);
         dialog.addEventListener('close', onClose);
+        document.addEventListener('click', onDocumentClick);
         return dialog;
     };
 
-    document.registerElement('math-ui-dialog', { prototype: element });
+    document.registerElement('math-ui-dialog', {prototype: element});
 
 })();
 </script>

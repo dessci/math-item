@@ -1,13 +1,12 @@
-<link rel="import" href="math-ui-controller.html">
-<link rel="import" href="math-ui-eqn-menu.html">
-<link rel="import" href="math-ui-plain.html">
-<link rel="import" href="math-ui-mml.html">
+<link rel="import" href="math-ui-controller.html" />
+<link rel="import" href="math-ui-eqn-menu.html" />
+<link rel="import" href="math-ui-plain.html" />
+<link rel="import" href="math-ui-mml.html" />
 
 <style>
     math-ui {
         position: relative;
         border: 3px solid transparent;
-        border-radius: 5px;
         padding: 1px;
         margin: -4px;  /* -(border-width + padding) */
         outline: none;
@@ -24,11 +23,26 @@
     math-ui:focus {
         border: 3px solid #4f9fcf;
     }
+    dialog.math-ui-zoom {
+        position: absolute;
+        background-color: white;
+        color: black;
+        padding: 0 0.5em;
+        border: 3px solid black;
+        margin: 0;
+        font-size: 200%;
+    }
 </style>
+
+<template id="math-ui-zoom">
+    <dialog class="math-ui-zoom"></dialog>
+</template>
 
 <script>
 (function () {
     'use strict';
+
+    console.log('math-ui');
 
     var importDoc = (document._currentScript ? document._currentScript : document.currentScript).ownerDocument;
     var mathUIDialog = document.createElement('math-ui-dialog');
@@ -38,6 +52,19 @@
     function async(fn) {
         requestAnimationFrame(fn);
         //setTimeout(fn, 0);
+    }
+
+    function getHandlerMethod(elem, method) {
+        var fn = elem.handler[method];
+        return fn ? fn.bind(elem.ownHandler ? elem : elem.handler) : null;
+    }
+
+    function genericCloner(dst, src) {
+        var node = src.firstChild;
+        while (node) {
+            dst.appendChild(node.cloneNode(true));
+            node = node.nextSibling;
+        }
     }
 
     element.domReady = function () {
@@ -54,7 +81,7 @@
             }
         }
         if (!this.hasAttribute('display') && this.handler.getDisplay) {
-            var display = this.ownHandler ? this.handler.getDisplay.call(this) : this.handler.getDisplay();
+            var display = getHandlerMethod(this, 'getDisplay')();
             if (display)
                 this.setAttribute('display', display);
         }
@@ -67,7 +94,17 @@
     };
 
     element.zoomAction = function () {
-        alert('zoom');
+        var tmpl = importDoc.querySelector('#math-ui-zoom');
+        var node = document.importNode(tmpl.content, true);
+        var dialog = node.querySelector('dialog');
+        var cloner = getHandlerMethod(this, 'clonePresentation');
+        if (cloner)
+            cloner(dialog);
+        else
+            genericCloner(dialog, this.ownHandler ? this : this.handler)
+        dialog.style.left = this.offsetLeft + 'px';
+        dialog.style.top = this.offsetTop + 'px';
+        mathUIDialog.showModal(dialog);
     };
 
     element.sourceAction = function () {
@@ -119,7 +156,8 @@
             if (ev.keyCode === 39) self.menu.navNext();
             else if (ev.keyCode === 37) self.menu.navPrev();
             else if (ev.keyCode === 13) async(function () { self.menu.triggerSelection(); });
-            else console.log('keydown', ev.keyCode);
+            else if (ev.keyCode === 27) self.blur();
+            //else console.log('keydown', ev.keyCode);
         }, false);
         async(this.domReady.bind(this));
     };

@@ -35,9 +35,9 @@ Typesets math written in (La)TeX, using [MathJax](http://mathjax.org).
     element.createdCallback = function () {
         if (!mathjax)
             mathjax = document.createElement('mathjax-loader');
-        var sdom = this.createShadowRoot();
+        var root = this.createShadowRoot();
         var script = document.createElement('script');
-        sdom.appendChild(script);
+        root.appendChild(script);
         this._jax = script;
     };
 
@@ -52,15 +52,23 @@ Typesets math written in (La)TeX, using [MathJax](http://mathjax.org).
 
     element.getDisplay = function () {
         return this.getAttribute('mode') === 'display' ? 'block' : 'inline';
-    }
+    };
 
     element.getSourceTypes = function () {
         return sourceTypes;
-    }
+    };
 
     element.getSource = function (type) {
         return sourceTypes.indexOf(type) >= 0 ? this.textContent : undefined;
-    }
+    };
+
+    element.clonePresentation = function (dest) {
+        var clone = document.createElement('math-tex');
+        if (this.hasAttribute('mode'))
+            clone.setAttribute('mode', this.getAttribute('mode'));
+        clone.appendChild(document.createTextNode(this.textContent));
+        dest.appendChild(clone);
+    };
 
     document.registerElement('math-tex', {prototype: element});
 })();

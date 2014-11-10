@@ -22,6 +22,10 @@
         return [];
     };
 
+    element.clonePresentation = function (dest) {
+        dest.appendChild(this.cloneNode(true));
+    };
+
     document.registerElement('eqnstore-item', {prototype: element});
 })();
 </script>
