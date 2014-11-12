@@ -50,8 +50,6 @@
 (function () {
     'use strict';
 
-    console.log('math-ui-dialog');
-
     if (document.createElement('dialog') instanceof HTMLUnknownElement) {
         var importDoc = (document._currentScript ? document._currentScript : document.currentScript).ownerDocument;
         var head = document.querySelector('head');
@@ -72,19 +70,20 @@
         return false;
     }
 
-    element.showModal = function (dialog, handler) {
+    element.showModal = function (dialog, clickHandler, closeHandler) {
         document.body.appendChild(dialog);
         if (!dialog.showModal && window.dialogPolyfill) {
             dialogPolyfill.registerDialog(dialog);
         }
         dialog.showModal();
         function onDocumentClick(ev) {
-            if (!handler || !isAncestorOf(dialog, ev.target) || handler(ev))
+            if (!clickHandler || !isAncestorOf(dialog, ev.target) || clickHandler(ev))
                 dialog.close();
         }
         function onClose() {
-            document.removeEventListener('click', onDocumentClick);
             dialog.removeEventListener('close', onClose);
+            document.removeEventListener('click', onDocumentClick);
+            if (closeHandler) closeHandler();
             document.body.removeChild(dialog);
         }
         dialog.addEventListener('close', onClose);

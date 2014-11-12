@@ -2,12 +2,19 @@
 (function() {
     'use strict';
 
-    console.log('math-ui-plain');
-
     var element = Object.create(HTMLElement.prototype);
 
     element.getSourceTypes = function () {
-        return ['text/html'];
+        return ['HTML'];
+    };
+
+    element.getSource = function (type) {
+        if (type !== 'HTML') return null;
+        var frag = document.createDocumentFragment();
+        Array.prototype.forEach.call(this.childNodes, function (node) {
+            frag.appendChild(node.cloneNode(true));
+        });
+        return frag;
     };
 
     document.registerElement('math-ui-plain', {prototype: element});

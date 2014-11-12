@@ -14,6 +14,8 @@
 
     function requestTypeset(entry) {
         MathJax.Hub.Queue([entry[0], MathJax.Hub, entry[1]]);
+        if (entry.length === 3)
+            MathJax.Hub.Queue(entry[2]);
     }
 
     function readyCallback() {
@@ -22,8 +24,9 @@
         queue = [];
     }
 
-    function pushAction(action, elem) {
+    function pushAction(action, elem, callback) {
         var entry = [action, elem];
+        if (callback) entry.push(callback);
         if (state === states.ready)
             requestTypeset(entry);
         else if (state !== states.error)
@@ -47,6 +50,7 @@
                 skipStartupTypeset: true,
                 //jax: ["input/TeX", "output/HTML-CSS"],
                 jax: ["input/TeX", "input/MathML", "output/HTML-CSS"],
+                extensions: ["toMathML.js"],
                 AuthorInit: function () {
                     MathJax.Hub.Register.StartupHook("End Config", function () {
                         var waitFor = MathJax.Hub.config.skipStartupTypeset ? "End" : "Begin Typeset";
@@ -63,12 +67,12 @@
         }
     };
 
-    element.typeset = function (elem) {
-        pushAction("Typeset", elem);
+    element.typeset = function (elem, callback) {
+        pushAction("Typeset", elem, callback);
     };
 
-    element.reprocess = function (elem) {
-        pushAction("Reprocess", elem);
+    element.reprocess = function (elem, callback) {
+        pushAction("Reprocess", elem, callback);
     };
 
     document.registerElement('mathjax-loader', {prototype: element});

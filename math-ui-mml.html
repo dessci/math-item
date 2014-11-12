@@ -5,7 +5,11 @@
     var element = Object.create(HTMLElement.prototype);
 
     element.getSourceTypes = function () {
-        return ['application/mathml+xml'];
+        return ['MathML'];
+    };
+
+    element.getSource = function (type) {
+        return type === 'MathML' ? this.querySelector('math') : null;
     };
 
     element.getDisplay = function () {
