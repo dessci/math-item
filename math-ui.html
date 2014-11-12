@@ -181,7 +181,7 @@
                     item.removeAttribute('selected');
             });
             var source = getHandlerMethod(el, 'getSource')(sourcetypes[sourceIndex]);
-            dialog.querySelector('pre').innerText = source == null ? '' : sourceToString(source);
+            dialog.querySelector('pre').textContent = source == null ? '' : sourceToString(source);
         }
         function keydown(ev) {
             if (ev.keyCode === 39)
