@@ -1,0 +1,30 @@
+﻿body, html {
+  margin: 0;
+  padding: 0; }
+
+#wrapper {
+  max-width: 50em;
+  margin-left: auto;
+  margin-right: auto; }
+
+#main, #aside {
+  padding: 0.5em;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  width: 100%;
+  float: left; }
+
+#aside ul {
+  padding: 0;
+  list-style-type: none; }
+#aside li {
+  margin: 0.5em 0; }
+
+@media all and (min-width: 30em) {
+  #main {
+    width: 75%; }
+  #aside {
+    width: 25%; } }
+
+/*# sourceMappingURL=main.css.map */

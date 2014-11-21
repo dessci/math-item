@@ -1,0 +1,65 @@
+﻿.math-ui {
+    position: relative;
+    border: 3px solid transparent;
+    padding: 1px;
+    margin: -4px;  /* -(border-width + padding) */
+    outline: none;
+    cursor: pointer;
+   
+    &:hover, &.highlight {
+        border: 3px solid #afbfff;
+    }
+
+    &:focus {
+        border: 3px solid #4f9fcf;
+    }
+
+    & > div.math-ui-eqn-menu {
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-family: sans-serif;
+        font-size: 80%;
+        white-space: nowrap;
+        z-index: 1;
+
+        & > span.math-ui-header {
+            background-color: #4f7dc9;
+            color: white;
+            padding: 0.5em;
+        }
+    
+        & > span.math-ui-container {
+            margin: 0;
+            padding: 0;
+            display: inline-block;
+
+            & > span.math-ui-item {
+                display: inline-block;
+                background-color: #d6e3e7;
+                padding: 0.5em 0;
+                width: 6em;
+                text-align: center;
+
+                &.math-ui-selected {
+                    font-weight: bold;
+                }
+        
+                &:hover {
+                    background-color: #eaf1f3;
+                }
+            }
+
+        }
+    }
+}
+
+span.math-ui {
+    display: inline-block;
+}
+
+div.math-ui {
+    display: block;
+    text-align: center;
+}
+
