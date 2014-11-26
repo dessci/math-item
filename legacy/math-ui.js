@@ -1,113 +1,278 @@
-﻿
-// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget.addEventListener
-(function () {
-    if (!Event.prototype.preventDefault) {
-        Event.prototype.preventDefault = function () {
-            this.returnValue = false;
-        };
+window.microJQ = (function () {
+    'use strict';
+    var KEYBOARD_EVENTS = ['keydown', 'keyup', 'keypress'];
+    var elementStore = {};
+    var elementCounter = 0;
+    function nextId() {
+        return '' + (++elementCounter);
     }
-    if (!Event.prototype.stopPropagation) {
-        Event.prototype.stopPropagation = function () {
-            this.cancelBubble = true;
-        };
-    }
-    if (!Element.prototype.addEventListener) {
-        var eventListeners = [];
-
-        var addEventListener = function (type, listener /*, useCapture (will be ignored) */ ) {
-            var self = this;
-            var wrapper = function (e) {
-                e.target = e.srcElement;
-                e.currentTarget = self;
-                if (listener.handleEvent) {
-                    listener.handleEvent(e);
-                } else {
-                    listener.call(self, e);
-                }
-            };
-            if (type == "DOMContentLoaded") {
-                var wrapper2 = function (e) {
-                    if (document.readyState == "complete") {
-                        wrapper(e);
-                    }
-                };
-                document.attachEvent("onreadystatechange", wrapper2);
-                eventListeners.push({ object: this, type: type, listener: listener, wrapper: wrapper2 });
-
-                if (document.readyState == "complete") {
-                    var e = new Event();
-                    e.srcElement = window;
-                    wrapper2(e);
-                }
-            } else {
-                this.attachEvent("on" + type, wrapper);
-                eventListeners.push({ object: this, type: type, listener: listener, wrapper: wrapper });
-            }
-        };
-        var removeEventListener = function (type, listener /*, useCapture (will be ignored) */ ) {
-            var counter = 0;
-            while (counter < eventListeners.length) {
-                var eventListener = eventListeners[counter];
-                if (eventListener.object == this && eventListener.type == type && eventListener.listener == listener) {
-                    if (type == "DOMContentLoaded") {
-                        this.detachEvent("onreadystatechange", eventListener.wrapper);
-                    } else {
-                        this.detachEvent("on" + type, eventListener.wrapper);
-                    }
-                    eventListeners.splice(counter, 1);
-                    break;
-                }
-                ++counter;
-            }
-        };
-        Element.prototype.addEventListener = addEventListener;
-        Element.prototype.removeEventListener = removeEventListener;
-        if (HTMLDocument) {
-            HTMLDocument.prototype.addEventListener = addEventListener;
-            HTMLDocument.prototype.removeEventListener = removeEventListener;
+    function getElementStore(element) {
+        var elementId = element.microjqid;
+        var store = elementId && elementStore[elementId];
+        if (!store) {
+            element.microjqid = elementId = nextId();
+            elementStore[elementId] = store = { events: {}, handler: undefined };
         }
-        if (Window) {
-            Window.prototype.addEventListener = addEventListener;
-            Window.prototype.removeEventListener = removeEventListener;
+        return store;
+    }
+    function indexOf(array, item) {
+        if (array.indexOf)
+            return array.indexOf(item);
+        for (var i = 0; i < array.length; i++)
+            if (item === array[i])
+                return i;
+        return -1;
+    }
+    function arrayEach(array, callback) {
+        for (var k = 0; k < array.length; k++) {
+            var item = array[k];
+            callback.call(item, k, item);
         }
     }
-})();
-
-// foreach
-if (!Array.prototype.forEach) {
-    Array.prototype.forEach = function (callbackfn, thisArg) {
-        var array = this;
-        for (var k = 0; k < array.length; k++)
-            callbackfn.call(thisArg, array[k], k, array);
-    };
-}
-
-// map
-if (!Array.prototype.map) {
-    Array.prototype.map = function (callbackfn, thisArg) {
-        var array = this;
+    function objectEach(obj, callback) {
+        var key;
+        for (key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                var value = obj[key];
+                callback.call(value, key, value);
+            }
+        }
+    }
+    function map(array, callback) {
         var result = [];
         for (var k = 0; k < array.length; k++)
-            result.push(callbackfn.call(thisArg, array[k], k, array));
+            result.push(callback(array[k], k));
         return result;
+    }
+    function toArray(array) {
+        return map(array, function (item) { return item; });
+    }
+    function arrayRemove(array, elem) {
+        var idx = indexOf(array, elem);
+        if (idx >= 0)
+            array.splice(idx, 1);
+    }
+    function filter(array, fn) {
+        var result = [];
+        arrayEach(array, function (i, value) {
+            if (fn(value, i))
+                result.push(value);
+        });
+        return result;
+    }
+    function spaceSplit(st) {
+        return filter(st.split(' '), function (item) { return item.length != 0; });
+    }
+    function isArray(obj) {
+        return Object.prototype.toString.call(obj) === '[object Array]';
+    }
+    function addEventListenerFn(el, type, callback) {
+        if (el.addEventListener)
+            el.addEventListener(type, callback, false);
+        else
+            el.attachEvent('on' + type, callback);
+    }
+    function removeEventListenerFn(el, type, callback) {
+        if (el.removeEventListener)
+            el.removeEventListener(type, callback, false);
+        else
+            el.detachEvent('on' + type, callback);
+    }
+    function normalizeEvent(event) {
+        var mjqevent = event;
+        if (indexOf(KEYBOARD_EVENTS, event.type) >= 0) {
+            mjqevent.which = mjqevent.keyCode;
+        }
+        return mjqevent;
+    }
+    function createEventHandler(element, events) {
+        function eventHandler(event) {
+            var eventFns = events[event.type];
+            if (eventFns && eventFns.length) {
+                var mjqevent = normalizeEvent(event);
+                if (eventFns.length > 1)
+                    eventFns = toArray(eventFns);
+                arrayEach(eventFns, function (i, fn) {
+                    fn.call(element, mjqevent);
+                });
+            }
+        }
+        return eventHandler;
+    }
+    function elementOff(el, type, fn) {
+        var store = getElementStore(el);
+        var events = store.events;
+        var handler = store.handler;
+        if (!handler)
+            return;
+        if (type) {
+            arrayEach(spaceSplit(type), function (i, type) {
+                if (fn) {
+                    var listeners = events[type];
+                    if (listeners) {
+                        arrayRemove(listeners, fn);
+                        if (listeners.length)
+                            return;
+                    }
+                }
+                removeEventListenerFn(el, type, handler);
+                delete events[type];
+            });
+        }
+        else {
+            for (type in events) {
+                removeEventListenerFn(el, type, handler);
+                delete events[type];
+            }
+        }
+    }
+    function elementRemoveData(element) {
+        var elementId = element.microjqid;
+        var store = elementId && elementStore[elementId];
+        if (store) {
+            if (store.handler) {
+                elementOff(element);
+            }
+            delete elementStore[elementId];
+            element.microjqid = undefined;
+        }
+    }
+    function subTreeRemoveData(element) {
+        elementRemoveData(element);
+        arrayEach(element.querySelectorAll('*'), function (i, descendant) {
+            elementRemoveData(descendant);
+        });
+    }
+    function MicroEl(els) {
+        this.els = els;
+    }
+    MicroEl.prototype = {
+        find: function (selector) {
+            return new MicroEl(toArray(document.querySelectorAll(selector)));
+        },
+        data: function (key) {
+            return this.els[0].getAttribute('data-' + key);
+        },
+        get: function (index) {
+            return this.els[index];
+        },
+        each: function (func) {
+            arrayEach(this.els, func);
+            return this;
+        },
+        append: function () {
+            var content = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                content[_i - 0] = arguments[_i];
+            }
+            var els = this.els;
+            var nodes = [];
+            arrayEach(content, function (i, item) {
+                arrayEach(isArray(item) ? item : [item], function (j, e) {
+                    var newnodes = e instanceof MicroEl ? e.els : typeof e === 'string' ? document.createTextNode(e) : e;
+                    nodes = nodes.concat(newnodes);
+                });
+            });
+            arrayEach(els, function (j, el) {
+                var clone = j < els.length - 1;
+                arrayEach(nodes, function (k, n) {
+                    el.appendChild(clone ? n.cloneNode() : n);
+                });
+            });
+            return this;
+        }
     };
-}
-
-// bind (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind)
-if (!Function.prototype.bind) {
-    Function.prototype.bind = function (oThis) {
-        var aArgs = Array.prototype.slice.call(arguments, 1), fToBind = this, fNOP = function () {
-        }, fBound = function () {
-            return fToBind.apply(this instanceof fNOP && oThis ? this : oThis, aArgs.concat(Array.prototype.slice.call(arguments)));
+    objectEach({
+        blur: function (el) {
+            el.blur();
+        },
+        css: function (el, propertyName, value) {
+            el.style[propertyName] = value;
+        },
+        remove: function (el) {
+            subTreeRemoveData(el);
+            var parent = el.parentNode;
+            if (parent)
+                parent.removeChild(el);
+        },
+        addClass: function (el, className) {
+            var classes = spaceSplit(el.className);
+            arrayEach(spaceSplit(className), function (j, newClass) {
+                if (indexOf(classes, newClass) < 0)
+                    classes.push(newClass);
+            });
+            el.className = classes.join(' ');
+        },
+        removeClass: function (el, className) {
+            if (className) {
+                var classes = spaceSplit(el.className);
+                arrayEach(spaceSplit(className), function (j, removeClass) {
+                    arrayRemove(classes, removeClass);
+                });
+                el.className = classes.join(' ');
+            }
+            else
+                el.className = '';
+        },
+        attr: function (el, attributeName, value) {
+            el.setAttribute(attributeName, value);
+        },
+        on: function (el, type, fn) {
+            var store = getElementStore(el);
+            var events = store.events;
+            var handler = store.handler;
+            if (!handler)
+                handler = store.handler = createEventHandler(el, events);
+            arrayEach(spaceSplit(type), function (i, type) {
+                var eventFns = events[type];
+                if (!eventFns) {
+                    eventFns = events[type] = [];
+                    addEventListenerFn(el, type, handler);
+                }
+                eventFns.push(fn);
+            });
+        },
+        off: elementOff
+    }, function (name, method) {
+        MicroEl.prototype[name] = function (arg1, arg2) {
+            arrayEach(this.els, function (i, el) {
+                method(el, arg1, arg2);
+            });
+            return this;
         };
-
-        fNOP.prototype = this.prototype;
-        fBound.prototype = new fNOP();
-
-        return fBound;
+    });
+    var microJQ = function (arg) {
+        return new MicroEl(isArray(arg) ? arg : [arg]);
     };
-}
-/// <reference path="math-ui-polyfills.ts" />
+    microJQ.ready = function (fn) {
+        var fired = false;
+        function trigger() {
+            if (fired)
+                return;
+            fired = true;
+            fn();
+        }
+        if (document.readyState === 'complete') {
+            setTimeout(trigger);
+        }
+        else {
+            if (document.addEventListener) {
+                document.addEventListener('DOMContentLoaded', trigger);
+            }
+            if (document.attachEvent) {
+                document.attachEvent('onreadystatechange', function () {
+                    if (document.readyState === 'complete')
+                        trigger();
+                });
+            }
+            addEventListenerFn(window, 'load', trigger);
+        }
+    };
+    microJQ.each = arrayEach;
+    microJQ.map = map;
+    microJQ.isArray = isArray;
+    return microJQ;
+})();
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -117,7 +282,7 @@ var __extends = this.__extends || function (d, b) {
 var MathUI;
 (function (MathUI) {
     'use strict';
-
+    var $;
     var PlainHandler = (function () {
         function PlainHandler() {
         }
@@ -125,7 +290,6 @@ var MathUI;
         };
         return PlainHandler;
     })();
-
     var MathMLHandler = (function () {
         function MathMLHandler() {
         }
@@ -133,66 +297,33 @@ var MathUI;
         };
         return MathMLHandler;
     })();
-
     var handlers = {
         'plain-html': new PlainHandler(),
         'native-mathml': new MathMLHandler()
     };
-
-    var Elem = (function () {
-        function Elem(el) {
-            this.el = el;
-        }
-        Elem.prototype.setClassName = function (cls) {
-            this.el.className = cls;
-            return this;
-        };
-        Elem.prototype.appendArray = function (nodes) {
-            var _this = this;
-            nodes.forEach(function (n) {
-                _this.el.appendChild(n.el);
-            });
-            return this;
-        };
-        Elem.prototype.appendNode = function () {
-            var nodes = [];
-            for (var _i = 0; _i < (arguments.length - 0); _i++) {
-                nodes[_i] = arguments[_i + 0];
-            }
-            return this.appendArray(nodes);
-        };
-        Elem.prototype.appendText = function (st) {
-            this.el.appendChild(document.createTextNode(st));
-            return this;
-        };
-        return Elem;
-    })();
-
-    function createElem(tagName) {
-        return new Elem(document.createElement(tagName));
+    function createElem(tagName, count) {
+        count = count || 1;
+        var els = [];
+        while (count-- > 0)
+            els.push(document.createElement(tagName));
+        return $(els);
     }
-
     function showDashboard() {
         alert('Dashboard');
     }
     MathUI.showDashboard = showDashboard;
-
     function zoomAction(el) {
         alert('zoom');
     }
-
     function sourceAction(el) {
         alert('source');
     }
-
     function searchAction(el) {
         alert('search');
     }
-
     function shareAction(el) {
         alert('share');
     }
-
     var menuItems = [
         { label: 'Zoom', action: zoomAction },
         { label: 'Source', action: sourceAction },
@@ -200,32 +331,26 @@ var MathUI;
         { label: 'Share', action: shareAction },
         { label: 'Dashboard', action: showDashboard }
     ];
-
     function elementGotFocus(el) {
-        var selectedIndex;
-        var buttons = menuItems.map(function (item) {
-            return createElem('span').setClassName('math-ui-item').appendText(item.label);
-        });
-        var menu = createElem('div').setClassName('math-ui-eqn-menu').appendNode(createElem('span').setClassName('math-ui-header').appendText('Equation ?'), createElem('span').setClassName('math-ui-container').appendArray(buttons)).el;
-        function updateSelected(index) {
-            //if (index === selectedIndex) return;
-            selectedIndex = index;
-            buttons.forEach(function (elem, k) {
-                elem.setClassName('math-ui-item' + (k === index ? ' math-ui-selected' : ''));
+        var selectedIndex, buttons = createElem('span', menuItems.length).addClass('math-ui-item').each(function (k, el) {
+            $(el).append(menuItems[k].label).on('mousedown', function () {
+                updateSelected(k);
+                triggerSelected();
             });
-        }
-        function triggerSelected() {
+        }), menu = createElem('div').addClass('math-ui-eqn-menu').append(createElem('span').addClass('math-ui-header').append('Equation ?'), createElem('span').addClass('math-ui-container').append(buttons)), updateSelected = function (index) {
+            selectedIndex = index;
+            buttons.removeClass('math-ui-selected');
+            $(buttons.get(index)).addClass('math-ui-selected');
+        }, triggerSelected = function () {
             el.blur();
-            menuItems[selectedIndex].action(el);
-        }
-        function triggerK(k) {
-            updateSelected(k);
-            triggerSelected();
-        }
-        function onkeydown(ev) {
-            switch (ev.keyCode) {
+            menuItems[selectedIndex].action(el.get(0));
+        }, onkeydown = function (ev) {
+            switch (ev.which) {
                 case 13:
                     triggerSelected();
+                    break;
+                case 27:
+                    el.blur();
                     break;
                 case 37:
                     updateSelected((selectedIndex + menuItems.length - 1) % menuItems.length);
@@ -234,56 +359,33 @@ var MathUI;
                     updateSelected((selectedIndex + 1) % menuItems.length);
                     break;
             }
-        }
-        var triggers = menuItems.map(function (item, k) {
-            return triggerK.bind(undefined, k);
-        });
-        function onblur() {
-            el.removeChild(menu);
-            triggers.forEach(function (trigger, k) {
-                buttons[k].el.removeEventListener('mousedown', trigger);
-            });
-            el.removeEventListener('keydown', onkeydown);
-            el.removeEventListener('blur', onblur);
-        }
-        el.addEventListener('blur', onblur);
-        el.addEventListener('keydown', onkeydown);
-        triggers.forEach(function (trigger, k) {
-            buttons[k].el.addEventListener('mousedown', trigger);
-        });
+        }, onblur = function () {
+            menu.remove();
+            el.off('keydown', onkeydown).off('blur', onblur);
+        };
+        el.append(menu).on('blur', onblur).on('keydown', onkeydown);
         updateSelected(0);
-        el.appendChild(menu);
-        menu.style.top = (el.offsetHeight - 3) + 'px';
+        menu.css('top', (el.get(0).offsetHeight - 3) + 'px');
     }
-
     function elementReady(el) {
-        var type = el.getAttribute('data-type');
+        var type = el.data('type');
         if (type && type in handlers) {
             var handler = handlers[type];
-            handler.init(el);
+            handler.init(el.get(0));
         }
-        el.tabIndex = 0;
-        el.addEventListener('focus', function () {
-            return elementGotFocus(el);
-        });
+        el.attr('tabindex', 0).on('focus', function () { return elementGotFocus(el); });
     }
-
-    function init() {
-        document.addEventListener('DOMContentLoaded', function () {
-            Array.prototype.forEach.call(document.querySelectorAll('.math-ui'), elementReady);
-        });
-    }
-    MathUI.init = init;
-
     function registerHandler(type, handler) {
         handlers[type] = handler;
     }
     MathUI.registerHandler = registerHandler;
+    microJQ.ready(function () {
+        $ = ('jQuery' in window && jQuery.fn.on) ? jQuery : microJQ;
+        $(document).find('.math-ui').each(function () {
+            elementReady($(this));
+        });
+    });
 })(MathUI || (MathUI = {}));
-
-MathUI.init();
-
-
 var MathJaxHandler = (function () {
     function MathJaxHandler() {
     }
@@ -292,7 +394,6 @@ var MathJaxHandler = (function () {
     };
     return MathJaxHandler;
 })();
-
 var MathJaxTexHandler = (function (_super) {
     __extends(MathJaxTexHandler, _super);
     function MathJaxTexHandler() {
@@ -300,9 +401,7 @@ var MathJaxTexHandler = (function (_super) {
     }
     return MathJaxTexHandler;
 })(MathJaxHandler);
-
 MathUI.registerHandler('tex', new MathJaxTexHandler());
-
 var MathJaxMathMLHandler = (function (_super) {
     __extends(MathJaxMathMLHandler, _super);
     function MathJaxMathMLHandler() {
@@ -310,6 +409,5 @@ var MathJaxMathMLHandler = (function (_super) {
     }
     return MathJaxMathMLHandler;
 })(MathJaxHandler);
-
 MathUI.registerHandler('mml', new MathJaxMathMLHandler());
 //# sourceMappingURL=math-ui.js.map

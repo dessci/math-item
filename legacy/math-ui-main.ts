@@ -1,7 +1,12 @@
-﻿/// <reference path="math-ui-polyfills.ts" />
+﻿/// <reference path="microjq.ts" />
+
+declare var microJQ: MicroJQStatic;
+declare var jQuery: MicroJQStatic;
 
 module MathUI {
     'use strict';
+
+    var $: MicroJQStatic;
 
     export interface Handler {
         init(el: HTMLElement): void;
@@ -28,30 +33,12 @@ module MathUI {
         'native-mathml': new MathMLHandler()
     };
 
-    class Elem {
-        constructor(public el: HTMLElement) {
-        }
-        setClassName(cls: string): Elem {
-            this.el.className = cls;
-            return this;
-        }
-        appendArray(nodes: Elem[]): Elem {
-            nodes.forEach((n: Elem): void => {
-                this.el.appendChild(n.el);
-            });
-            return this;
-        }
-        appendNode(...nodes: Elem[]): Elem {
-            return this.appendArray(nodes);
-        }
-        appendText(st: string): Elem {
-            this.el.appendChild(document.createTextNode(st));
-            return this;
-        }
-    }
-
-    function createElem(tagName: string): Elem {
-        return new Elem(document.createElement(tagName));
+    function createElem(tagName: string, count?: number): MicroJQ {
+        count = count || 1;
+        var els = [];
+        while (count-- > 0)
+            els.push(document.createElement(tagName));
+        return $(els);
     }
 
     export function showDashboard(): void {
@@ -87,86 +74,76 @@ module MathUI {
         { label: 'Dashboard', action: showDashboard }
     ];
 
-    function elementGotFocus(el: HTMLElement): void {
-        var selectedIndex: number;
-        var buttons: Elem[] = menuItems.map((item: MenuItem): Elem =>
-            createElem('span').setClassName('math-ui-item').appendText(item.label));
-        var menu: HTMLElement = createElem('div').setClassName('math-ui-eqn-menu')
-            .appendNode(
-                createElem('span').setClassName('math-ui-header').appendText('Equation ?'),
-                createElem('span').setClassName('math-ui-container').appendArray(buttons)
-            ).el;
-        function updateSelected(index: number): void {
-            //if (index === selectedIndex) return;
-            selectedIndex = index;
-            buttons.forEach((elem: Elem, k: number): void => {
-                elem.setClassName('math-ui-item' + (k === index ? ' math-ui-selected' : ''));
-            });
-        }
-        function triggerSelected(): void {
-            el.blur();
-            menuItems[selectedIndex].action(el);
-        }
-        function triggerK(k: number): void {
-            updateSelected(k);
-            triggerSelected();
-        }
-        function onkeydown(ev: KeyboardEvent): void {
-            switch (ev.keyCode) {
-                case 13:
+    function elementGotFocus(el: MicroJQ): void {
+        var selectedIndex: number,
+            buttons = createElem('span', menuItems.length).addClass('math-ui-item').each(function (k: number, el: Element) {
+                $(el).append(menuItems[k].label).on('mousedown', () => {
+                    updateSelected(k);
                     triggerSelected();
-                    break;
-                case 37:
-                    updateSelected((selectedIndex + menuItems.length - 1) % menuItems.length);
-                    break;
-                case 39:
-                    updateSelected((selectedIndex + 1) % menuItems.length);
-                    break;
-            }
-        }
-        var triggers: Callback[] = menuItems.map(
-            (item: MenuItem, k: number): Callback => triggerK.bind(undefined, k));
-        function onblur(): void {
-            el.removeChild(menu);
-            triggers.forEach((trigger: Callback, k: number): void => {
-                buttons[k].el.removeEventListener('mousedown', trigger);
-            });
-            el.removeEventListener('keydown', onkeydown);
-            el.removeEventListener('blur', onblur);
-        }
-        el.addEventListener('blur', onblur);
-        el.addEventListener('keydown', onkeydown);
-        triggers.forEach((trigger: Callback, k: number): void => {
-            buttons[k].el.addEventListener('mousedown', trigger);
-        });
+                });
+            }),
+            menu = createElem('div').addClass('math-ui-eqn-menu').append(
+                createElem('span').addClass('math-ui-header').append('Equation ?'),
+                createElem('span').addClass('math-ui-container').append(buttons)
+            ),
+            updateSelected = (index: number) => {
+                selectedIndex = index;
+                buttons.removeClass('math-ui-selected');
+                $(buttons.get(index)).addClass('math-ui-selected');
+            },
+            triggerSelected = () => {
+                el.blur();
+                menuItems[selectedIndex].action(el.get(0));
+            },
+            onkeydown = (ev: MicroJQEventObject) => {
+                switch (ev.which) {
+                    case 13:
+                        triggerSelected();
+                        break;
+                    case 27:
+                        el.blur();
+                        break;
+                    case 37:
+                        updateSelected((selectedIndex + menuItems.length - 1) % menuItems.length);
+                        break;
+                    case 39:
+                        updateSelected((selectedIndex + 1) % menuItems.length);
+                        break;
+                }
+            },
+            onblur = () => {
+                menu.remove();
+                el.off('keydown', onkeydown)
+                    .off('blur', onblur);
+            };
+        el.append(menu)
+            .on('blur', onblur)
+            .on('keydown', onkeydown);
         updateSelected(0);
-        el.appendChild(menu);
-        menu.style.top = (el.offsetHeight - 3) + 'px';
+        menu.css('top', (el.get(0).offsetHeight - 3) + 'px');
     }
 
-    function elementReady(el: HTMLElement): void {
-        var type: string = el.getAttribute('data-type');
+    function elementReady(el: MicroJQ): void {
+        var type: string = el.data('type');
         if (type && type in handlers) {
             var handler: Handler = handlers[type];
-            handler.init(el);
+            handler.init(el.get(0));
         }
-        el.tabIndex = 0;
-        el.addEventListener('focus', (): void => elementGotFocus(el));
-    }
-
-    export function init(): void {
-        document.addEventListener('DOMContentLoaded', (): void => {
-            Array.prototype.forEach.call(document.querySelectorAll('.math-ui'), elementReady);
-        });
+        el.attr('tabindex', 0)
+            .on('focus', () => elementGotFocus(el));
     }
 
     export function registerHandler(type: string, handler: Handler): void {
         handlers[type] = handler;
     }
 
+    microJQ.ready(function () {
+        $ = ('jQuery' in window && jQuery.fn.on) ? jQuery : microJQ;
+        $(document).find('.math-ui').each(function () {
+            elementReady($(this));
+        });
+    });
 }
-
-MathUI.init();
 
 // extensions
 
