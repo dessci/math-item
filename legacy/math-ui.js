@@ -1,4 +1,4 @@
-window.microJQ = (function () {
+(function (window, document, undefined) {
     'use strict';
     var KEYBOARD_EVENTS = ['keydown', 'keyup', 'keypress'];
     var elementStore = {};
@@ -16,33 +16,29 @@ window.microJQ = (function () {
         return store;
     }
     function indexOf(array, item) {
-        if (array.indexOf)
-            return array.indexOf(item);
         for (var i = 0; i < array.length; i++)
             if (item === array[i])
                 return i;
         return -1;
     }
-    function arrayEach(array, callback) {
+    function forEach(array, callbackfn, thisArg) {
         for (var k = 0; k < array.length; k++) {
-            var item = array[k];
-            callback.call(item, k, item);
+            callbackfn.call(thisArg, array[k], k, array);
         }
     }
+    function map(array, callback, thisArg) {
+        var result = [];
+        for (var k = 0; k < array.length; k++)
+            result.push(callback.call(thisArg, array[k], k, array));
+        return result;
+    }
     function objectEach(obj, callback) {
-        var key;
-        for (key in obj) {
+        for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 var value = obj[key];
                 callback.call(value, key, value);
             }
         }
-    }
-    function map(array, callback) {
-        var result = [];
-        for (var k = 0; k < array.length; k++)
-            result.push(callback(array[k], k));
-        return result;
     }
     function toArray(array) {
         return map(array, function (item) { return item; });
@@ -54,14 +50,14 @@ window.microJQ = (function () {
     }
     function filter(array, fn) {
         var result = [];
-        arrayEach(array, function (i, value) {
+        forEach(array, function (value, i) {
             if (fn(value, i))
                 result.push(value);
         });
         return result;
     }
     function spaceSplit(st) {
-        return filter(st.split(' '), function (item) { return item.length != 0; });
+        return filter(st.split(' '), function (item) { return item.length !== 0; });
     }
     function isArray(obj) {
         return Object.prototype.toString.call(obj) === '[object Array]';
@@ -78,12 +74,29 @@ window.microJQ = (function () {
         else
             el.detachEvent('on' + type, callback);
     }
+    function preventDefaultWrapper() {
+        if (this.originalEvent.preventDefault)
+            this.originalEvent.preventDefault();
+        else
+            this.originalEvent.returnValue = false;
+    }
+    function stopPropagationWrapper() {
+        if (this.originalEvent.stopPropagation)
+            this.originalEvent.stopPropagation();
+        else
+            this.originalEvent.cancelBubble = true;
+    }
     function normalizeEvent(event) {
-        var mjqevent = event;
-        if (indexOf(KEYBOARD_EVENTS, event.type) >= 0) {
-            mjqevent.which = mjqevent.keyCode;
+        function MicroJQEvent() {
+            this.originalEvent = event;
+            this.preventDefault = preventDefaultWrapper;
+            this.stopPropagation = stopPropagationWrapper;
+            this.target = event.target || event.srcElement;
+            if (indexOf(KEYBOARD_EVENTS, event.type) >= 0)
+                this.which = event.keyCode;
         }
-        return mjqevent;
+        MicroJQEvent.prototype = event;
+        return new MicroJQEvent();
     }
     function createEventHandler(element, events) {
         function eventHandler(event) {
@@ -92,7 +105,7 @@ window.microJQ = (function () {
                 var mjqevent = normalizeEvent(event);
                 if (eventFns.length > 1)
                     eventFns = toArray(eventFns);
-                arrayEach(eventFns, function (i, fn) {
+                forEach(eventFns, function (fn) {
                     fn.call(element, mjqevent);
                 });
             }
@@ -106,7 +119,7 @@ window.microJQ = (function () {
         if (!handler)
             return;
         if (type) {
-            arrayEach(spaceSplit(type), function (i, type) {
+            forEach(spaceSplit(type), function (type) {
                 if (fn) {
                     var listeners = events[type];
                     if (listeners) {
@@ -139,7 +152,7 @@ window.microJQ = (function () {
     }
     function subTreeRemoveData(element) {
         elementRemoveData(element);
-        arrayEach(element.querySelectorAll('*'), function (i, descendant) {
+        forEach(element.querySelectorAll('*'), function (descendant) {
             elementRemoveData(descendant);
         });
     }
@@ -148,16 +161,27 @@ window.microJQ = (function () {
     }
     MicroEl.prototype = {
         find: function (selector) {
-            return new MicroEl(toArray(document.querySelectorAll(selector)));
+            var matches = [];
+            forEach(this.els, function (el) {
+                forEach(el.querySelectorAll(selector), function (n) {
+                    matches.push(n);
+                });
+            });
+            return new MicroEl(matches);
+        },
+        first: function () {
+            return this.els.length === 0 ? this : new MicroEl([this.els[0]]);
         },
         data: function (key) {
             return this.els[0].getAttribute('data-' + key);
         },
         get: function (index) {
-            return this.els[index];
+            return index !== undefined ? this.els[index] : this.els;
         },
         each: function (func) {
-            arrayEach(this.els, func);
+            forEach(this.els, function (el, i) {
+                func.call(el, i, el);
+            });
             return this;
         },
         append: function () {
@@ -167,15 +191,15 @@ window.microJQ = (function () {
             }
             var els = this.els;
             var nodes = [];
-            arrayEach(content, function (i, item) {
-                arrayEach(isArray(item) ? item : [item], function (j, e) {
+            forEach(content, function (item) {
+                forEach(isArray(item) ? item : [item], function (e) {
                     var newnodes = e instanceof MicroEl ? e.els : typeof e === 'string' ? document.createTextNode(e) : e;
                     nodes = nodes.concat(newnodes);
                 });
             });
-            arrayEach(els, function (j, el) {
+            forEach(els, function (el, j) {
                 var clone = j < els.length - 1;
-                arrayEach(nodes, function (k, n) {
+                forEach(nodes, function (n) {
                     el.appendChild(clone ? n.cloneNode() : n);
                 });
             });
@@ -185,6 +209,9 @@ window.microJQ = (function () {
     objectEach({
         blur: function (el) {
             el.blur();
+        },
+        focus: function (el) {
+            el.focus();
         },
         css: function (el, propertyName, value) {
             el.style[propertyName] = value;
@@ -197,7 +224,7 @@ window.microJQ = (function () {
         },
         addClass: function (el, className) {
             var classes = spaceSplit(el.className);
-            arrayEach(spaceSplit(className), function (j, newClass) {
+            forEach(spaceSplit(className), function (newClass) {
                 if (indexOf(classes, newClass) < 0)
                     classes.push(newClass);
             });
@@ -206,7 +233,7 @@ window.microJQ = (function () {
         removeClass: function (el, className) {
             if (className) {
                 var classes = spaceSplit(el.className);
-                arrayEach(spaceSplit(className), function (j, removeClass) {
+                forEach(spaceSplit(className), function (removeClass) {
                     arrayRemove(classes, removeClass);
                 });
                 el.className = classes.join(' ');
@@ -223,7 +250,7 @@ window.microJQ = (function () {
             var handler = store.handler;
             if (!handler)
                 handler = store.handler = createEventHandler(el, events);
-            arrayEach(spaceSplit(type), function (i, type) {
+            forEach(spaceSplit(type), function (type) {
                 var eventFns = events[type];
                 if (!eventFns) {
                     eventFns = events[type] = [];
@@ -235,7 +262,7 @@ window.microJQ = (function () {
         off: elementOff
     }, function (name, method) {
         MicroEl.prototype[name] = function (arg1, arg2) {
-            arrayEach(this.els, function (i, el) {
+            forEach(this.els, function (el) {
                 method(el, arg1, arg2);
             });
             return this;
@@ -268,11 +295,11 @@ window.microJQ = (function () {
             addEventListenerFn(window, 'load', trigger);
         }
     };
-    microJQ.each = arrayEach;
+    microJQ.forEach = forEach;
     microJQ.map = map;
-    microJQ.isArray = isArray;
-    return microJQ;
-})();
+    microJQ.indexOf = indexOf;
+    window.microJQ = microJQ;
+})(window, document);
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -301,15 +328,83 @@ var MathUI;
         'plain-html': new PlainHandler(),
         'native-mathml': new MathMLHandler()
     };
-    function createElem(tagName, count) {
-        count = count || 1;
-        var els = [];
-        while (count-- > 0)
-            els.push(document.createElement(tagName));
-        return $(els);
+    function create(tagName) {
+        return document.createElement(tagName);
     }
+    function stopEvent(event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    var Dialog = (function () {
+        function Dialog() {
+        }
+        Dialog.prototype.show = function () {
+            var _this = this;
+            var wrapper = $(create('div')).addClass('math-ui-wrapper'), dialog = $(create('div')).addClass('math-ui-dialog').append(wrapper);
+            this.backdrop = $(create('div')).addClass('math-ui-backdrop').append(dialog);
+            this.prepareDialog(dialog, wrapper);
+            this.documentHandler = function (event) {
+                if (event.type === 'click' || event.which === 27) {
+                    console.log('doc click', event);
+                    stopEvent(event);
+                    _this.close();
+                }
+            };
+            $(document.body).append(this.backdrop);
+            $(document).on('click keydown', this.documentHandler);
+            dialog.css('height', wrapper.get(0).offsetHeight + 'px').on('click', function (event) {
+                stopEvent(event);
+                _this.click(event);
+            });
+        };
+        Dialog.prototype.close = function () {
+            $(document).off('click keydown', this.documentHandler);
+            this.backdrop.remove();
+            this.backdrop = this.documentHandler = undefined;
+        };
+        Dialog.prototype.prepareDialog = function (dialog, container) {
+        };
+        Dialog.prototype.click = function (event) {
+        };
+        return Dialog;
+    })();
+    function niy(name) {
+        alert(name + ' not implemented yet');
+    }
+    var DashboardDialog = (function (_super) {
+        __extends(DashboardDialog, _super);
+        function DashboardDialog() {
+            _super.apply(this, arguments);
+        }
+        DashboardDialog.prototype.prepareDialog = function (dialog, container) {
+            dialog.addClass('math-ui-dashboard');
+            this.buttons = $(microJQ.map(DashboardDialog.dashboardItems, function () { return create('button'); })).each(function (k, el) {
+                $(el).append(DashboardDialog.dashboardItems[k].label);
+            });
+            container.append($(create('div')).addClass('math-ui-header').append('MathUI Dashboard'), $(create('div')).addClass('math-ui-content').append(this.buttons));
+        };
+        DashboardDialog.prototype.show = function () {
+            _super.prototype.show.call(this);
+            this.buttons.first().focus();
+        };
+        DashboardDialog.prototype.click = function (event) {
+            var nr = microJQ.indexOf(this.buttons.get(), event.target);
+            if (nr >= 0 && nr < DashboardDialog.dashboardItems.length) {
+                this.close();
+                DashboardDialog.dashboardItems[nr].action(DashboardDialog.dashboardItems[nr].label);
+            }
+        };
+        DashboardDialog.dashboardItems = [
+            { label: 'Highlight All Equations', action: niy },
+            { label: 'Action 2', action: niy },
+            { label: 'Action 3', action: niy },
+            { label: 'Action 4', action: niy }
+        ];
+        return DashboardDialog;
+    })(Dialog);
     function showDashboard() {
-        alert('Dashboard');
+        var dialog = new DashboardDialog();
+        dialog.show();
     }
     MathUI.showDashboard = showDashboard;
     function zoomAction(el) {
@@ -332,21 +427,17 @@ var MathUI;
         { label: 'Dashboard', action: showDashboard }
     ];
     function elementGotFocus(el) {
-        var selectedIndex, buttons = createElem('span', menuItems.length).addClass('math-ui-item').each(function (k, el) {
-            $(el).append(menuItems[k].label).on('mousedown', function () {
-                updateSelected(k);
-                triggerSelected();
-            });
-        }), menu = createElem('div').addClass('math-ui-eqn-menu').append(createElem('span').addClass('math-ui-header').append('Equation ?'), createElem('span').addClass('math-ui-container').append(buttons)), updateSelected = function (index) {
+        var selectedIndex, triggerSelected = function () {
+            el.blur();
+            menuItems[selectedIndex].action(el.get(0));
+        }, buttons = $(microJQ.map(menuItems, function () { return create('span'); })).addClass('math-ui-item'), menu = $(create('div')).addClass('math-ui-eqn-menu').append($(create('span')).addClass('math-ui-header').append('Equation ?'), $(create('span')).addClass('math-ui-container').append(buttons)), updateSelected = function (index) {
             selectedIndex = index;
             buttons.removeClass('math-ui-selected');
             $(buttons.get(index)).addClass('math-ui-selected');
-        }, triggerSelected = function () {
-            el.blur();
-            menuItems[selectedIndex].action(el.get(0));
         }, onkeydown = function (ev) {
             switch (ev.which) {
                 case 13:
+                    ev.preventDefault();
                     triggerSelected();
                     break;
                 case 27:
@@ -363,6 +454,12 @@ var MathUI;
             menu.remove();
             el.off('keydown', onkeydown).off('blur', onblur);
         };
+        buttons.each(function (k, el) {
+            $(el).append(menuItems[k].label).on('mousedown', function () {
+                updateSelected(k);
+                triggerSelected();
+            });
+        });
         el.append(menu).on('blur', onblur).on('keydown', onkeydown);
         updateSelected(0);
         menu.css('top', (el.get(0).offsetHeight - 3) + 'px');

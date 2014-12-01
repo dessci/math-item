@@ -12,8 +12,8 @@
     <script src="math-ui.js"></script>
     <script type="text/x-mathjax-config">
         MathJax.Hub.Config({
-        skipStartupTypeset: true,
-        showMathMenu: false
+            skipStartupTypeset: true,
+            showMathMenu: false
         });
     </script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
@@ -308,9 +308,18 @@
                 <li><i class="fa fa-list fa-fw"></i> <a href="#">All posts</a></li>
                 <li><i class="fa fa-twitter fa-fw"></i> <a href="#">@myusername</a></li>
                 <li><i class="fa fa-rss fa-fw"></i> <a href="#">Subscribe in a reader</a></li>
-                <li><i class="fa fa-superscript fa-fw"></i> <a id="unimath-dashboard-trigger" href="#">MathUI Dashboard</a></li>
+                <li><i class="fa fa-superscript fa-fw"></i> <a id="math-ui-dashboard-trigger" href="#">MathUI Dashboard</a></li>
             </ul>
         </div>
     </div>
+    <script>
+        microJQ.ready(function () {
+            microJQ(document).find('#math-ui-dashboard-trigger').on('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                MathUI.showDashboard();
+            });
+        });
+    </script>
 </body>
 </html>

@@ -1,48 +1,20 @@
 ﻿// https://github.com/borisyankov/DefinitelyTyped/blob/master/jquery/jquery.d.ts
 
 interface BaseMicroJQEventObject extends Event {
-    data: any;
-    delegateTarget: Element;
-    isDefaultPrevented(): boolean;
-    isImmediatePropagationStopped(): boolean;
-    isPropagationStopped(): boolean;
-    namespace: string;
-    originalEvent: Event;
     preventDefault(): any;
-    relatedTarget: Element;
-    result: any;
-    stopImmediatePropagation(): void;
     stopPropagation(): void;
-    pageX: number;
-    pageY: number;
     which: number;
-    metaKey: boolean;
 }
 
 interface MicroJQInputEventObject extends BaseMicroJQEventObject {
-    altKey: boolean;
-    ctrlKey: boolean;
-    metaKey: boolean;
-    shiftKey: boolean;
 }
 
 interface MicroJQMouseEventObject extends MicroJQInputEventObject {
-    button: number;
-    clientX: number;
-    clientY: number;
-    offsetX: number;
-    offsetY: number;
-    pageX: number;
-    pageY: number;
-    screenX: number;
-    screenY: number;
 }
 
 interface MicroJQKeyEventObject extends MicroJQInputEventObject {
-    char: any;
-    charCode: number;
-    key: any;
     keyCode: number;
+    shiftKey: boolean;
 }
 
 interface MicroJQEventObject extends BaseMicroJQEventObject, MicroJQInputEventObject, MicroJQMouseEventObject, MicroJQKeyEventObject {
@@ -54,31 +26,42 @@ interface MicroJQEventHandler {
 
 interface MicroJQ {
     find(selector: string): MicroJQ;
+    first(): MicroJQ;
     each(func: (index: number, elem: Element) => any): MicroJQ;
     data(key: string): any;
+    attr(attributeName: string, value: string): MicroJQ;
     attr(attributeName: string, value: number): MicroJQ;
     get(index: number): HTMLElement;
+    get(): HTMLElement[];
     on(events: string, handler: MicroJQEventHandler): MicroJQ;
     off(events: string, handler?: MicroJQEventHandler): MicroJQ;
     append(content1: MicroJQ, ...content2: any[]): MicroJQ;
+    append(content1: Element, ...content2: any[]): MicroJQ;
     append(content1: any[], ...content2: any[]): MicroJQ;
     append(content1: string, ...content2: any[]): MicroJQ;
     addClass(className: string): MicroJQ;
     removeClass(className?: string): MicroJQ;
     css(propertyName: string, value: string): MicroJQ;
     blur(): MicroJQ;
+    focus(): MicroJQ;
     remove(): MicroJQ;
 }
 
-interface MicroJQStatic {
+interface JQueryStaticCommon {
     (element: Element): MicroJQ;
     (element: Document): MicroJQ;
     (elements: Element[]): MicroJQ;
-    each<T>(array: T[], callback: (indexInArray: number, valueOfElement: T) => any): void;
-    map<T, U>(array: T[], callback: (elementOfArray: T, indexInArray: number) => U): U[];
-    ready(fn: () => void): void;
-    isArray(obj: any): boolean;
+}
+
+interface JQueryStatic extends JQueryStaticCommon {
     fn: any;
+}
+
+interface MicroJQStatic extends JQueryStaticCommon {
+    forEach<T>(array: Indexable<T>, callbackfn: (value?: T, index?: number, array?: T[]) => void, thisArg?: any);
+    map<T, U>(array: Indexable<T>, callback: (value?: T, index?: number, array?: Indexable<T>) => U, thisArg?: any): U[];
+    indexOf<T>(array: T[], item: T): number;
+    ready(fn: () => void): void;
 }
 
 interface Window {
@@ -107,7 +90,7 @@ interface Indexable<T> {
     [index: number]: T;
 }
 
-window.microJQ = (function (): any {
+(function (window: Window, document: Document, undefined?: any) {
     'use strict';
 
     // internals
@@ -133,36 +116,32 @@ window.microJQ = (function (): any {
     }
 
     function indexOf<T>(array: T[], item: T): number {
-        if (array.indexOf)
-            return array.indexOf(item);
         for (var i = 0; i < array.length; i++)
             if (item === array[i])
                 return i;
         return -1;
     }
 
-    function arrayEach<T>(array: Indexable<T>, callback: (indexInArray?: number, valueOfElement?: T) => any): void {
+    function forEach<T>(array: Indexable<T>, callbackfn: (value?: T, index?: number, array?: T[]) => void, thisArg?: any) {
         for (var k = 0; k < array.length; k++) {
-            var item = array[k];
-            callback.call(item, k, item);
+            callbackfn.call(thisArg, array[k], k, array);
         }
     }
 
+    function map<T, U>(array: Indexable<T>, callback: (value?: T, index?: number, array?: Indexable<T>) => U, thisArg?: any): U[] {
+        var result: U[] = [];
+        for (var k = 0; k < array.length; k++)
+            result.push(callback.call(thisArg, array[k], k, array));
+        return result;
+    }
+
     function objectEach(obj: any, callback: (key: string, value: any) => void) {
-        var key;
-        for (key in obj) {
+        for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 var value = obj[key];
                 callback.call(value, key, value);
             }
         }
-    }
-
-    function map<T, U>(array: Indexable<T>, callback: (elementOfArray: T, indexInArray: number) => U): U[] {
-        var result: U[] = [];
-        for (var k = 0; k < array.length; k++)
-            result.push(callback(array[k], k));
-        return result;
     }
 
     function toArray<T>(array: Indexable<T>): T[] {
@@ -177,7 +156,7 @@ window.microJQ = (function (): any {
 
     function filter<T>(array: Indexable<T>, fn: (value: T, index: number) => boolean): T[] {
         var result: T[] = [];
-        arrayEach(array, (i: number, value: T) => {
+        forEach(array, (value: T, i: number) => {
             if (fn(value, i))
                 result.push(value);
         });
@@ -185,7 +164,7 @@ window.microJQ = (function (): any {
     }
 
     function spaceSplit(st: string): string[] {
-        return filter(st.split(' '), (item: string) => item.length != 0);
+        return filter(st.split(' '), (item: string) => item.length !== 0);
     }
 
     function isArray(obj: any): boolean {
@@ -206,12 +185,31 @@ window.microJQ = (function (): any {
             (<MSEventAttachmentTarget> <any> el).detachEvent('on' + type, callback);
     }
 
+    function preventDefaultWrapper() {
+        if (this.originalEvent.preventDefault)
+            this.originalEvent.preventDefault();
+        else
+            (<MSEventObj> this.originalEvent).returnValue = false;
+    }
+
+    function stopPropagationWrapper() {
+        if (this.originalEvent.stopPropagation)
+            this.originalEvent.stopPropagation();
+        else
+            (<MSEventObj> this.originalEvent).cancelBubble = true;
+    }
+
     function normalizeEvent(event: Event): MicroJQEventObject {
-        var mjqevent: MicroJQEventObject = <MicroJQEventObject> event;
-        if (indexOf(KEYBOARD_EVENTS, event.type) >= 0) {
-            mjqevent.which = mjqevent.keyCode;
+        function MicroJQEvent() {
+            this.originalEvent = event;
+            this.preventDefault = preventDefaultWrapper;
+            this.stopPropagation = stopPropagationWrapper;
+            this.target = event.target || event.srcElement;
+            if (indexOf(KEYBOARD_EVENTS, event.type) >= 0)
+                this.which = (<KeyboardEvent> event).keyCode;
         }
-        return mjqevent;
+        MicroJQEvent.prototype = event;
+        return new MicroJQEvent();
     }
 
     function createEventHandler(element: Element, events: ElementEvents): (event: Event) => void {
@@ -221,7 +219,7 @@ window.microJQ = (function (): any {
                 var mjqevent = normalizeEvent(event);
                 if (eventFns.length > 1)
                     eventFns = toArray(eventFns);  // make copy to avoid changes while looping
-                arrayEach(eventFns, (i: number, fn: MicroJQEventHandler) => {
+                forEach(eventFns, (fn: MicroJQEventHandler) => {
                     fn.call(element, mjqevent);
                 });
             }
@@ -237,7 +235,7 @@ window.microJQ = (function (): any {
         if (!handler) return;
 
         if (type) {
-            arrayEach(spaceSplit(type), (i: number, type: string) => {
+            forEach(spaceSplit(type), (type: string) => {
                 if (fn) {
                     var listeners = events[type];
                     if (listeners) {
@@ -249,10 +247,12 @@ window.microJQ = (function (): any {
                 delete events[type];
             });
         } else {
+            /* tslint:disable:forin */
             for (type in events) {
                 removeEventListenerFn(el, type, handler);
                 delete events[type];
             }
+            /* tslint:enable:forin */
         }
     }
 
@@ -271,7 +271,7 @@ window.microJQ = (function (): any {
 
     function subTreeRemoveData(element: Element) {
         elementRemoveData(element);
-        arrayEach(element.querySelectorAll('*'), (i: number, descendant: Element) => {
+        forEach(element.querySelectorAll('*'), (descendant: Element) => {
             elementRemoveData(descendant);
         });
     }
@@ -285,7 +285,17 @@ window.microJQ = (function (): any {
     MicroEl.prototype = {
 
         find: function (selector: string): MicroJQ {
-            return new MicroEl(<Element[]> toArray(document.querySelectorAll(selector)));
+            var matches = [];
+            forEach(this.els, (el: Element) => {
+                forEach(el.querySelectorAll(selector), (n: Node) => {
+                    matches.push(n);
+                });
+            });
+            return new MicroEl(matches);
+        },
+
+        first: function (): MicroJQ {
+            return this.els.length === 0 ? this : new MicroEl([this.els[0]]);
         },
 
         data: function (key: string): any {
@@ -293,26 +303,28 @@ window.microJQ = (function (): any {
         },
 
         get: function (index: number): HTMLElement {
-            return <HTMLElement> this.els[index];
+            return index !== undefined ? <HTMLElement> this.els[index] : this.els;
         },
 
         each: function (func: (indexInArray?: number, valueOfElement?: Element) => any): MicroJQ {
-            arrayEach(this.els, func);
+            forEach(this.els, (el: Element, i: number) => {
+                func.call(el, i, el);
+            });
             return this;
         },
 
         append: function (...content: any[]): MicroJQ {
             var els: Element[] = this.els;
             var nodes: Node[] = [];
-            arrayEach(content, (i: number, item: any) => {
-                arrayEach(isArray(item) ? item : [item], (j: number, e: any) => {
+            forEach(content, (item: any) => {
+                forEach(isArray(item) ? item : [item], (e: any) => {
                     var newnodes = e instanceof MicroEl ? e.els : typeof e === 'string' ? document.createTextNode(e) : e;
                     nodes = nodes.concat(newnodes);
                 });
             });
-            arrayEach(els, (j: number, el: Element) => {
+            forEach(els, (el: Element, j: number) => {
                 var clone = j < els.length - 1;
-                arrayEach(nodes, (k: number, n: Node) => {
+                forEach(nodes, (n: Node) => {
                     el.appendChild(clone ? n.cloneNode() : n);
                 });
             });
@@ -329,6 +341,10 @@ window.microJQ = (function (): any {
             el.blur();
         },
 
+        focus: (el: HTMLElement) => {
+            el.focus();
+        },
+
         css: (el: HTMLElement, propertyName: string, value: string) => {
             el.style[propertyName] = value;
         },
@@ -341,7 +357,7 @@ window.microJQ = (function (): any {
 
         addClass: (el: HTMLElement, className: string) => {
             var classes = spaceSplit(el.className);
-            arrayEach(spaceSplit(className), (j: number, newClass: string) => {
+            forEach(spaceSplit(className), (newClass: string) => {
                 if (indexOf(classes, newClass) < 0)
                     classes.push(newClass);
             });
@@ -351,7 +367,7 @@ window.microJQ = (function (): any {
         removeClass: (el: HTMLElement, className?: string) => {
             if (className) {
                 var classes = spaceSplit(el.className);
-                arrayEach(spaceSplit(className), (j: number, removeClass: string) => {
+                forEach(spaceSplit(className), (removeClass: string) => {
                     arrayRemove(classes, removeClass);
                 });
                 el.className = classes.join(' ');
@@ -371,7 +387,7 @@ window.microJQ = (function (): any {
             if (!handler)
                 handler = store.handler = createEventHandler(el, events);
 
-            arrayEach(spaceSplit(type), (i: number, type: string) => {
+            forEach(spaceSplit(type), (type: string) => {
                 var eventFns = events[type];
                 if (!eventFns) {
                     eventFns = events[type] = [];
@@ -384,19 +400,19 @@ window.microJQ = (function (): any {
         off: elementOff
 
     }, (name: string, method: (el: HTMLElement, arg1: any, arg2: any) => void) => {
-        MicroEl.prototype[name] = function (arg1, arg2): MicroJQ {
-            arrayEach(this.els, (i: number, el: HTMLElement) => {
+        MicroEl.prototype[name] = function (arg1: any, arg2: any): MicroJQ {
+            forEach(this.els, (el: HTMLElement) => {
                 method(el, arg1, arg2);
             });
             return this;
         };
     });
 
-    var microJQ: MicroJQStatic = <MicroJQStatic> function (arg: any): MicroJQ {
+    var microJQ = <MicroJQStatic> function (arg: any): MicroJQ {
         return new MicroEl(isArray(arg) ? arg : [arg]);
     };
 
-    microJQ.ready = (fn: () => void) => {
+    microJQ.ready = function (fn: () => void) {
         var fired = false;
 
         function trigger() {
@@ -421,9 +437,10 @@ window.microJQ = (function (): any {
         }
     };
 
-    microJQ.each = arrayEach;
+    microJQ.forEach = forEach;
     microJQ.map = map;
-    microJQ.isArray = isArray;
+    microJQ.indexOf = indexOf;
 
-    return microJQ;
-})();
+    window.microJQ = microJQ;
+
+})(window, document);
