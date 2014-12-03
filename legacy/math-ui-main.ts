@@ -2,30 +2,37 @@
 
 declare var microJQ: MicroJQStatic;
 declare var jQuery: JQueryStatic;
+declare var MathJax: any;
 
 module MathUI {
     'use strict';
 
-    var $: JQueryStaticCommon;
+    export var $: JQueryStaticCommon = microJQ;
 
-    export interface Handler {
-        init(el: HTMLElement): void;
+    export class Handler {
+        init(el: Element) {
+        }
+        clonePresentation(from: Element, to: Element) {
+            $(to).append($(from).contents().clone());
+        }
     }
 
     interface HandlerDictionary {
         [index: string]: Handler;
     }
 
-    interface Callback {
-        (): void;
+    interface MenuItem {
+        label: string;
+        action: (el?: any) => void;
     }
 
-    class PlainHandler implements Handler {
-        init(el: HTMLElement): void { }
+    var mathUIElements: { [key: string]: MathUIElement } = {};
+    var highlighted = false;
+
+    class PlainHandler extends Handler {
     }
 
-    class MathMLHandler implements Handler {
-        init(el: HTMLElement): void { }
+    class MathMLHandler extends Handler {
     }
 
     var handlers: HandlerDictionary = {
@@ -43,58 +50,188 @@ module MathUI {
     }
 
     class Dialog {
-        private backdrop: MicroJQ;
         private documentHandler: MicroJQEventHandler;
-        show(): void {
-            var wrapper = $(create('div')).addClass('math-ui-wrapper'),
-                dialog = $(create('div')).addClass('math-ui-dialog').append(wrapper);
-            this.backdrop = $(create('div')).addClass('math-ui-backdrop').append(dialog);
-            this.prepareDialog(dialog, wrapper);
+        private element: MicroJQ;
+        private dialog: MicroJQ;
+        private wrapper: MicroJQ;
+        show(className: string, parent?: Element) {
+            parent = parent || document.body;
+            this.wrapper = $(create('div')).addClass('math-ui-wrapper');
+            this.dialog = $(create('div')).addClass(className).append(this.wrapper);
+            this.element = parent === document.body
+                ? $(create('div')).addClass('math-ui-backdrop').append(this.dialog) : this.dialog;
+            this.prepareDialog(this.wrapper);
             this.documentHandler = (event: MicroJQEventObject) => {
                 if (event.type === 'click' || event.which === 27) {
-                    console.log('doc click', event);
                     stopEvent(event);
                     this.close();
                 }
             };
-            $(document.body).append(this.backdrop);
+            $(parent).append(this.element);
             $(document).on('click keydown', this.documentHandler);
-            dialog.css('height', wrapper.get(0).offsetHeight + 'px')
-                .on('click', (event: MicroJQEventObject) => {
-                    stopEvent(event);
-                    this.click(event);
-                });
+            this.dialog.on('click', (event: MicroJQEventObject) => {
+                stopEvent(event);
+                this.click(event);
+            });
         }
-        close(): void {
+        close() {
             $(document).off('click keydown', this.documentHandler);
-            this.backdrop.remove();
-            this.backdrop = this.documentHandler = undefined;
+            this.element.remove();
+            this.element = this.documentHandler = undefined;
         }
-        prepareDialog(dialog: MicroJQ, container: MicroJQ) {
+        fitContentWidth() {
+            this.dialog.css('width', this.wrapper.width() + 'px');
         }
-        click(event: MicroJQEventObject): void {
+        fitContentHeight() {
+            this.dialog.css('height', this.wrapper.height() + 'px');
+        }
+        prepareDialog(container: MicroJQ) {
+        }
+        click(event: MicroJQEventObject) {
         }
     }
 
-    function niy(name: string) {
-        alert(name + ' not implemented yet');
+    class ZoomDialog extends Dialog {
+        constructor(private host: MathUIElement) {
+            super();
+        }
+        prepareDialog(container: MicroJQ) {
+            this.host.clonePresentation(container);
+        }
+        show(): void {
+            super.show('math-ui-zoom', this.host.element);
+        }
+        click() {
+            this.close();
+        }
     }
 
-    interface MenuItem {
-        label: string;
-        action: (el?: any) => void;
+    class SourceDialog extends Dialog {
+        constructor(private host: MathUIElement) {
+            super();
+        }
+        prepareDialog(container: MicroJQ) {
+            var pre = $(create('pre'));
+            this.host.appendSource(pre);
+            container.append(
+                $(create('div')).addClass('math-ui-header').append('MathUI Dashboard'),
+                $(create('div')).addClass('math-ui-content').append(pre)
+            );
+        }
+        show(): void {
+            super.show('math-ui-dialog math-ui-source');
+            this.fitContentHeight();
+        }
+        click() {
+        }
+    }
+
+    class MathUIElement {
+        static menuItems: MenuItem[] = [
+            { label: 'Zoom', action: MathUIElement.prototype.zoomAction },
+            { label: 'Source', action: MathUIElement.prototype.sourceAction },
+            { label: 'Search', action: () => { alert('search'); } },
+            { label: 'Share', action: () => { alert('share'); } },
+            { label: 'Dashboard', action: showDashboard }
+        ];
+        private name: string;
+        private handler: Handler;
+        constructor(public element: HTMLElement, index: number) {
+            var type: string = $(element).data('type');
+            if (!(type && type in handlers))
+                type = 'plain-html';
+            this.name = 'Equation ' + (index+1);
+            this.handler = handlers[type];
+            this.handler.init(element);
+        }
+        clonePresentation(to: MicroJQ) {
+            this.handler.clonePresentation(this.element, to.get(0));
+        }
+        appendSource(container: MicroJQ) {
+            container.append($(create('pre')).append('some\nlines'));
+        }
+        changeHighlight(on: boolean) {
+            var el = $(this.element);
+            on ? el.addClass('highlight') : el.removeClass('highlight');
+        }
+        zoomAction() {
+            var dialog = new ZoomDialog(this);
+            dialog.show();
+        }
+        sourceAction() {
+            var dialog = new SourceDialog(this);
+            dialog.show();
+        }
+        gotFocus() {
+            var el = $(this.element);
+            var selectedIndex: number,
+                triggerSelected = () => {
+                    el.blur();
+                    // IE8: Make sure focus menu is removed before triggering action
+                    setTimeout(() => {
+                        MathUIElement.menuItems[selectedIndex].action.call(this);
+                    });
+                },
+                buttons = $(microJQ.map(MathUIElement.menuItems, () => create('span'))).addClass('math-ui-item'),
+                menu = $(create('div')).addClass('math-ui-eqn-menu').append(
+                    $(create('span')).addClass('math-ui-header').append(this.name),
+                    $(create('span')).addClass('math-ui-container').append(buttons)
+                ),
+                updateSelected = (index: number) => {
+                    selectedIndex = index;
+                    buttons.removeClass('math-ui-selected');
+                    $(buttons.get(index)).addClass('math-ui-selected');
+                },
+                onkeydown = (ev: MicroJQEventObject) => {
+                    switch (ev.which) {
+                        case 13:
+                            ev.preventDefault();  // don't trigger mouse click
+                            triggerSelected();
+                            break;
+                        case 27:
+                            el.blur();
+                            break;
+                        case 37:
+                            updateSelected((selectedIndex + MathUIElement.menuItems.length - 1) % MathUIElement.menuItems.length);
+                            break;
+                        case 39:
+                            updateSelected((selectedIndex + 1) % MathUIElement.menuItems.length);
+                            break;
+                    }
+                },
+                onblur = () => {
+                    menu.remove();
+                    el.off('keydown', onkeydown).off('blur', onblur);
+                };
+            buttons.each(function (k: number, btn: Element) {
+                $(btn).append(MathUIElement.menuItems[k].label).on('mousedown', (event: MicroJQEventObject) => {
+                    stopEvent(event);
+                    updateSelected(k);
+                    triggerSelected();
+                });
+            });
+            el.append(menu).on('keydown', onkeydown).on('blur', onblur);
+            updateSelected(0);
+            menu.css('top', (el.get(0).offsetHeight - 3) + 'px');
+        }
+    }
+
+    function highlightAllEquations() {
+        highlighted = !highlighted;
+        microJQ.objectEach(mathUIElements, (id: string, mathUIElement: MathUIElement) => {
+            mathUIElement.changeHighlight(highlighted);
+        });
     }
 
     class DashboardDialog extends Dialog {
         static dashboardItems: MenuItem[] = [
-            { label: 'Highlight All Equations', action: niy },
-            { label: 'Action 2', action: niy },
-            { label: 'Action 3', action: niy },
-            { label: 'Action 4', action: niy }
+            { label: 'Highlight All Equations', action: highlightAllEquations },
+            { label: 'About MathUI', action: () => { alert('About MathUI'); } },
+            { label: 'Action 3', action: () => { alert('Action 3 not implemented'); } },
+            { label: 'Action 4', action: () => { alert('Action 4 not implemented'); } }
         ];
         private buttons: MicroJQ;
-        prepareDialog(dialog: MicroJQ, container: MicroJQ) {
-            dialog.addClass('math-ui-dashboard');
+        prepareDialog(container: MicroJQ) {
             this.buttons = $(microJQ.map(DashboardDialog.dashboardItems, () => create('button')))
                 .each((k: number, el: Element) => {
                     $(el).append(DashboardDialog.dashboardItems[k].label);
@@ -105,7 +242,8 @@ module MathUI {
             );
         }
         show(): void {
-            super.show();
+            super.show('math-ui-dialog math-ui-dashboard');
+            this.fitContentHeight();
             this.buttons.first().focus();
         }
         click(event: MicroJQEventObject): void {
@@ -122,89 +260,12 @@ module MathUI {
         dialog.show();
     }
 
-    function zoomAction(el: HTMLElement): void {
-        alert('zoom');
-    }
-
-    function sourceAction(el: HTMLElement): void {
-        alert('source');
-    }
-
-    function searchAction(el: HTMLElement): void {
-        alert('search');
-    }
-
-    function shareAction(el: HTMLElement): void {
-        alert('share');
-    }
-
-    var menuItems: MenuItem[] = [
-        { label: 'Zoom', action: zoomAction },
-        { label: 'Source', action: sourceAction },
-        { label: 'Search', action: searchAction },
-        { label: 'Share', action: shareAction },
-        { label: 'Dashboard', action: showDashboard }
-    ];
-
-    function elementGotFocus(el: MicroJQ): void {
-        var selectedIndex: number,
-            triggerSelected = () => {
-                el.blur();
-                menuItems[selectedIndex].action(el.get(0));
-            },
-            buttons = $(microJQ.map(menuItems, () => create('span'))).addClass('math-ui-item'),
-            menu = $(create('div')).addClass('math-ui-eqn-menu').append(
-                $(create('span')).addClass('math-ui-header').append('Equation ?'),
-                $(create('span')).addClass('math-ui-container').append(buttons)
-            ),
-            updateSelected = (index: number) => {
-                selectedIndex = index;
-                buttons.removeClass('math-ui-selected');
-                $(buttons.get(index)).addClass('math-ui-selected');
-            },
-            onkeydown = (ev: MicroJQEventObject) => {
-                switch (ev.which) {
-                    case 13:
-                        ev.preventDefault();  // don't trigger mouse click
-                        triggerSelected();
-                        break;
-                    case 27:
-                        el.blur();
-                        break;
-                    case 37:
-                        updateSelected((selectedIndex + menuItems.length - 1) % menuItems.length);
-                        break;
-                    case 39:
-                        updateSelected((selectedIndex + 1) % menuItems.length);
-                        break;
-                }
-            },
-            onblur = () => {
-                menu.remove();
-                el.off('keydown', onkeydown)
-                    .off('blur', onblur);
-            };
-        buttons.each(function (k: number, el: Element) {
-            $(el).append(menuItems[k].label).on('mousedown', () => {
-                updateSelected(k);
-                triggerSelected();
-            });
+    function elementReady(k: number, element: Element): void {
+        var id = 'math-ui-element-' + k;
+        var mathUIElement = mathUIElements[id] = new MathUIElement(<HTMLElement> element, k);
+        $(element).attr('id', id).attr('tabindex', 0).on('focus', () => {
+            mathUIElement.gotFocus();
         });
-        el.append(menu)
-            .on('blur', onblur)
-            .on('keydown', onkeydown);
-        updateSelected(0);
-        menu.css('top', (el.get(0).offsetHeight - 3) + 'px');
-    }
-
-    function elementReady(el: MicroJQ): void {
-        var type: string = el.data('type');
-        if (type && type in handlers) {
-            var handler: Handler = handlers[type];
-            handler.init(el.get(0));
-        }
-        el.attr('tabindex', 0)
-            .on('focus', () => elementGotFocus(el));
     }
 
     export function registerHandler(type: string, handler: Handler): void {
@@ -212,30 +273,32 @@ module MathUI {
     }
 
     microJQ.ready(function () {
-        $ = ('jQuery' in window && jQuery.fn.on) ? jQuery : microJQ;
-        $(document).find('.math-ui').each(function () {
-            elementReady($(this));
-        });
+        if ('jQuery' in window && jQuery.fn.on)
+            $ = jQuery;
+        $(document).find('.math-ui').each(elementReady);
     });
 
 }
 
-// extensions
+// built-in extensions
 
-declare var MathJax: any;
-
-class MathJaxHandler implements MathUI.Handler {
-    init(el: HTMLElement): void {
+class MathJaxHandler extends MathUI.Handler {
+    init(el: Element): void {
         MathJax.Hub.Queue(['Typeset', MathJax.Hub, el]);
+    }
+    clonePresentation(from: Element, to: Element) {
+        var fromscript = <HTMLScriptElement> from.querySelector('script[type]'),
+            toscript = document.createElement('script');
+        if (!fromscript) return;
+        if (fromscript.textContent !== undefined)
+            toscript.textContent = fromscript.textContent;
+        else
+            toscript.text = fromscript.text;
+        toscript.setAttribute('type', fromscript.getAttribute('type'));
+        to.appendChild(toscript);
+        MathJax.Hub.Queue(['Typeset', MathJax.Hub, to]);
     }
 }
 
-class MathJaxTexHandler extends MathJaxHandler {
-}
-
-MathUI.registerHandler('tex', new MathJaxTexHandler());
-
-class MathJaxMathMLHandler extends MathJaxHandler {
-}
-
-MathUI.registerHandler('mml', new MathJaxMathMLHandler());
+MathUI.registerHandler('tex', new MathJaxHandler());
+MathUI.registerHandler('mml', new MathJaxHandler());

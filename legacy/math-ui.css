@@ -13,9 +13,9 @@
   .math-ui > div.math-ui-eqn-menu {
     position: absolute;
     left: 0;
-    top: 0;
     font-family: sans-serif;
-    font-size: 80%;
+    font-size: 12px;
+    font-size: 0.8rem;
     white-space: nowrap;
     z-index: 1; }
     .math-ui > div.math-ui-eqn-menu > span.math-ui-header {
@@ -55,51 +55,40 @@ div.math-ui-backdrop {
   /* IE*/
   background-color: rgba(0, 0, 0, 0.1);
   z-index: 100000; }
+  div.math-ui-backdrop > div.math-ui-dialog {
+    margin: auto;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0; }
 
 div.math-ui-dialog {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  margin: auto;
-  border: 3px solid black;
+  background-color: #d6e3e7;
+  border: 1px solid white;
   padding: 0;
-  background: white;
-  color: black;
-  width: 20em;
-  width: -moz-fit-content;
-  width: -webkit-fit-content;
-  width: fit-content;
-  height: 10em;
-  height: -moz-fit-content;
-  height: -webkit-fit-content;
-  height: fit-content;
+  font-family: sans-serif;
+  font-size: 1rem;
   overflow: hidden;
   z-index: 100001; }
   div.math-ui-dialog > div.math-ui-wrapper {
     padding: 0;
     margin: 0;
     border: 1px solid white; }
-
-div.math-ui-dialog.math-ui-dashboard {
-  background-color: #d6e3e7;
-  border: 1px solid white;
-  padding: 0;
-  font-family: sans-serif;
-  font-size: 1rem;
-  width: 20em; }
-  div.math-ui-dialog.math-ui-dashboard .math-ui-header {
+  div.math-ui-dialog .math-ui-header {
     background-color: #4f7dc9;
     color: #fff;
     height: 3em;
     line-height: 3em;
     padding: 0 1em;
     margin: 0; }
-  div.math-ui-dialog.math-ui-dashboard .math-ui-content {
+  div.math-ui-dialog .math-ui-content {
     color: #000;
     padding: 0;
     margin: 0; }
+
+div.math-ui-dialog.math-ui-dashboard {
+  width: 20em; }
   div.math-ui-dialog.math-ui-dashboard .math-ui-content button {
     background-color: transparent;
     color: #333;
@@ -118,5 +107,19 @@ div.math-ui-dialog.math-ui-dashboard {
       background-color: #eaf1f3; }
     div.math-ui-dialog.math-ui-dashboard .math-ui-content button:focus {
       font-weight: bold; }
+
+div.math-ui-dialog.math-ui-source {
+  width: 20em; }
+
+div.math-ui-zoom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 3px solid black;
+  padding: 0;
+  background: white;
+  color: black; }
+  div.math-ui-zoom > div.math-ui-wrapper {
+    font-size: 200%; }
 
 /*# sourceMappingURL=math-ui.css.map */

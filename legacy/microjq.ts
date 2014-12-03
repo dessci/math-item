@@ -27,10 +27,16 @@ interface MicroJQEventHandler {
 interface MicroJQ {
     find(selector: string): MicroJQ;
     first(): MicroJQ;
+    contents(): MicroJQ;
+    clone(): MicroJQ;
     each(func: (index: number, elem: Element) => any): MicroJQ;
     data(key: string): any;
     attr(attributeName: string, value: string): MicroJQ;
     attr(attributeName: string, value: number): MicroJQ;
+    attr(attributeName: string): string;
+    removeAttr(attributeName: string);
+    width(): number;
+    height(): number;
     get(index: number): HTMLElement;
     get(): HTMLElement[];
     on(events: string, handler: MicroJQEventHandler): MicroJQ;
@@ -59,6 +65,7 @@ interface JQueryStatic extends JQueryStaticCommon {
 
 interface MicroJQStatic extends JQueryStaticCommon {
     forEach<T>(array: Indexable<T>, callbackfn: (value?: T, index?: number, array?: T[]) => void, thisArg?: any);
+    objectEach<T>(obj: {[key: string]: T}, callback: (key: string, value: T) => void);
     map<T, U>(array: Indexable<T>, callback: (value?: T, index?: number, array?: Indexable<T>) => U, thisArg?: any): U[];
     indexOf<T>(array: T[], item: T): number;
     ready(fn: () => void): void;
@@ -95,7 +102,7 @@ interface Indexable<T> {
 
     // internals
 
-    var KEYBOARD_EVENTS = ['keydown', 'keyup', 'keypress'];
+    //var KEYBOARD_EVENTS = ['keydown', 'keyup', 'keypress'];
     var elementStore: ElementStoreMap = {};
     var elementCounter: number = 0;
 
@@ -135,7 +142,7 @@ interface Indexable<T> {
         return result;
     }
 
-    function objectEach(obj: any, callback: (key: string, value: any) => void) {
+    function objectEach<T>(obj: {[key: string]: T}, callback: (key: string, value: T) => void) {
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 var value = obj[key];
@@ -185,38 +192,27 @@ interface Indexable<T> {
             (<MSEventAttachmentTarget> <any> el).detachEvent('on' + type, callback);
     }
 
-    function preventDefaultWrapper() {
-        if (this.originalEvent.preventDefault)
-            this.originalEvent.preventDefault();
-        else
-            (<MSEventObj> this.originalEvent).returnValue = false;
-    }
-
-    function stopPropagationWrapper() {
-        if (this.originalEvent.stopPropagation)
-            this.originalEvent.stopPropagation();
-        else
-            (<MSEventObj> this.originalEvent).cancelBubble = true;
-    }
-
-    function normalizeEvent(event: Event): MicroJQEventObject {
-        function MicroJQEvent() {
+    var MicroJQEvent = (function () {
+        function MicroJQEvent(event: Event) {
             this.originalEvent = event;
-            this.preventDefault = preventDefaultWrapper;
-            this.stopPropagation = stopPropagationWrapper;
+            this.type = event.type;
             this.target = event.target || event.srcElement;
-            if (indexOf(KEYBOARD_EVENTS, event.type) >= 0)
-                this.which = (<KeyboardEvent> event).keyCode;
+            this.which = (<KeyboardEvent> event).which || (<KeyboardEvent> event).keyCode;
         }
-        MicroJQEvent.prototype = event;
-        return new MicroJQEvent();
-    }
+        MicroJQEvent.prototype.preventDefault = Event.prototype.preventDefault
+            ? function () { this.originalEvent.preventDefault(); }
+            : function () { (<MSEventObj> this.originalEvent).returnValue = false; };
+        MicroJQEvent.prototype.stopPropagation = Event.prototype.stopPropagation
+            ? function () { this.originalEvent.stopPropagation(); }
+            : function () { (<MSEventObj> this.originalEvent).cancelBubble = true; };
+        return MicroJQEvent;
+    })();
 
     function createEventHandler(element: Element, events: ElementEvents): (event: Event) => void {
         function eventHandler(event: Event) {
             var eventFns = events[event.type];
             if (eventFns && eventFns.length) {
-                var mjqevent = normalizeEvent(event);
+                var mjqevent = new MicroJQEvent(event);
                 if (eventFns.length > 1)
                     eventFns = toArray(eventFns);  // make copy to avoid changes while looping
                 forEach(eventFns, (fn: MicroJQEventHandler) => {
@@ -294,12 +290,50 @@ interface Indexable<T> {
             return new MicroEl(matches);
         },
 
+        contents: function (): MicroJQ {
+            var matches = [];
+            forEach(this.els, (el: Element) => {
+                var child: Node = el.firstChild;
+                while (child != null) {
+                    matches.push(child);
+                    child = child.nextSibling;
+                }
+            });
+            return new MicroEl(matches);
+        },
+
+        // Note: IE8 does not clone text nodes
+        clone: function (): MicroJQ {
+            return new MicroEl(map(this.els, (el: Element) => <Element> el.cloneNode(true)));
+        },
+
         first: function (): MicroJQ {
             return this.els.length === 0 ? this : new MicroEl([this.els[0]]);
         },
 
+        attr: function (name: string, value?: string): any {
+            if (value === undefined)
+                return this.els[0].getAttribute(name);
+            else {
+                this.each((k: number, el: Element) => {
+                    el.setAttribute(name, value);
+                });
+                return this;
+            }
+        },
+
         data: function (key: string): any {
             return this.els[0].getAttribute('data-' + key);
+        },
+
+        width: function (): number {
+            var br = (<HTMLElement> this.els[0]).getBoundingClientRect();
+            return br.width !== undefined ? br.width : (br.right - br.left);
+        },
+
+        height: function (): number {
+            var br = (<HTMLElement> this.els[0]).getBoundingClientRect();
+            return br.height !== undefined ? br.height : (br.bottom - br.top);
         },
 
         get: function (index: number): HTMLElement {
@@ -375,8 +409,12 @@ interface Indexable<T> {
                 el.className = '';
         },
 
-        attr: (el: Element, attributeName: string, value: string) => {
+        /*attr: (el: Element, attributeName: string, value: string) => {
             el.setAttribute(attributeName, value);
+        },*/
+
+        removeAttr: (el: Element, attributeName: string) => {
+            el.removeAttribute(attributeName);
         },
 
         on: (el: Element, type: string, fn: MicroJQEventHandler) => {
@@ -438,6 +476,7 @@ interface Indexable<T> {
     };
 
     microJQ.forEach = forEach;
+    microJQ.objectEach = objectEach;
     microJQ.map = map;
     microJQ.indexOf = indexOf;
 
