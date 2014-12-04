@@ -150,13 +150,36 @@
             elementRemoveData(descendant);
         });
     }
-    function MicroEl(els) {
-        this.els = els;
+    function MicroEl(elements) {
+        var _this = this;
+        this.length = 0;
+        forEach(elements, function (el) {
+            _this[_this.length++] = el;
+        });
     }
+    var deepClone = (function () {
+        function deepCloneNew(el) {
+            return el.cloneNode(true);
+        }
+        function deepCloneOld(el) {
+            var n = el.cloneNode(false);
+            if (n.nodeType === 1 && el.nodeName.toLowerCase() === 'script') {
+                n.text = el.text;
+            }
+            else {
+                for (var c = el.firstChild; c !== null; c = c.nextSibling)
+                    n.appendChild(deepCloneOld(c));
+            }
+            return n;
+        }
+        var s = document.createElement('script');
+        s.text = 'x';
+        return s.cloneNode(true).text === 'x' ? deepCloneNew : deepCloneOld;
+    })();
     MicroEl.prototype = {
         find: function (selector) {
             var matches = [];
-            forEach(this.els, function (el) {
+            forEach(this, function (el) {
                 forEach(el.querySelectorAll(selector), function (n) {
                     matches.push(n);
                 });
@@ -165,7 +188,7 @@
         },
         contents: function () {
             var matches = [];
-            forEach(this.els, function (el) {
+            forEach(this, function (el) {
                 var child = el.firstChild;
                 while (child != null) {
                     matches.push(child);
@@ -175,58 +198,52 @@
             return new MicroEl(matches);
         },
         clone: function () {
-            return new MicroEl(map(this.els, function (el) { return el.cloneNode(true); }));
+            return new MicroEl(map(this, deepClone));
         },
         first: function () {
-            return this.els.length === 0 ? this : new MicroEl([this.els[0]]);
-        },
-        attr: function (name, value) {
-            if (value === undefined)
-                return this.els[0].getAttribute(name);
-            else {
-                this.each(function (k, el) {
-                    el.setAttribute(name, value);
-                });
-                return this;
-            }
+            return this.length === 0 ? this : new MicroEl([this[0]]);
         },
         data: function (key) {
-            return this.els[0].getAttribute('data-' + key);
+            return this[0].getAttribute('data-' + key);
         },
         width: function () {
-            var br = this.els[0].getBoundingClientRect();
+            var br = this[0].getBoundingClientRect();
             return br.width !== undefined ? br.width : (br.right - br.left);
         },
         height: function () {
-            var br = this.els[0].getBoundingClientRect();
+            var br = this[0].getBoundingClientRect();
             return br.height !== undefined ? br.height : (br.bottom - br.top);
         },
         get: function (index) {
-            return index !== undefined ? this.els[index] : this.els;
+            return index !== undefined ? this[index] : this;
         },
         each: function (func) {
-            forEach(this.els, function (el, i) {
+            forEach(this, function (el, i) {
                 func.call(el, i, el);
             });
             return this;
         },
         append: function () {
+            var _this = this;
             var content = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 content[_i - 0] = arguments[_i];
             }
-            var els = this.els;
             var nodes = [];
             forEach(content, function (item) {
                 forEach(isArray(item) ? item : [item], function (e) {
-                    var newnodes = e instanceof MicroEl ? e.els : typeof e === 'string' ? document.createTextNode(e) : e;
-                    nodes = nodes.concat(newnodes);
+                    if (e instanceof MicroEl) {
+                        Array.prototype.push.apply(nodes, toArray(e));
+                    }
+                    else {
+                        nodes.push(typeof e === 'string' ? document.createTextNode(e) : e);
+                    }
                 });
             });
-            forEach(els, function (el, j) {
-                var clone = j < els.length - 1;
+            forEach(this, function (el, j) {
+                var clone = j < _this.length - 1;
                 forEach(nodes, function (n) {
-                    el.appendChild(clone ? n.cloneNode() : n);
+                    el.appendChild(clone ? n.cloneNode(true) : n);
                 });
             });
             return this;
@@ -267,6 +284,15 @@
             else
                 el.className = '';
         },
+        attr: function (el, attributeName, value) {
+            el.setAttribute(attributeName, value);
+        },
+        text: function (el, t) {
+            if (el.textContent !== undefined)
+                el.textContent = t;
+            else
+                el.innerText = t;
+        },
         removeAttr: function (el, attributeName) {
             el.removeAttribute(attributeName);
         },
@@ -288,7 +314,7 @@
         off: elementOff
     }, function (name, method) {
         MicroEl.prototype[name] = function (arg1, arg2) {
-            forEach(this.els, function (el) {
+            forEach(this, function (el) {
                 method(el, arg1, arg2);
             });
             return this;
@@ -345,6 +371,12 @@ var MathUI;
         Handler.prototype.clonePresentation = function (from, to) {
             MathUI.$(to).append(MathUI.$(from).contents().clone());
         };
+        Handler.prototype.getSourceTypes = function () {
+            return [];
+        };
+        Handler.prototype.getSourceFor = function (el, type) {
+            return null;
+        };
         return Handler;
     })();
     MathUI.Handler = Handler;
@@ -355,6 +387,12 @@ var MathUI;
         function PlainHandler() {
             _super.apply(this, arguments);
         }
+        PlainHandler.prototype.getSourceTypes = function () {
+            return ['HTML'];
+        };
+        PlainHandler.prototype.getSourceFor = function (el, type) {
+            return type === 'HTML' ? trim(el.innerHTML) : null;
+        };
         return PlainHandler;
     })(Handler);
     var MathMLHandler = (function (_super) {
@@ -371,6 +409,10 @@ var MathUI;
     function create(tagName) {
         return document.createElement(tagName);
     }
+    var trim = String.prototype.trim ? function (st) { return st.trim(); } : (function () {
+        var trimregex = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+        return function (st) { return st.replace(trimregex, ''); };
+    })();
     function stopEvent(event) {
         event.stopPropagation();
         event.preventDefault();
@@ -390,6 +432,8 @@ var MathUI;
                     stopEvent(event);
                     _this.close();
                 }
+                else if (event.type === 'keydown')
+                    _this.keydown(event);
             };
             MathUI.$(parent).append(this.element);
             MathUI.$(document).on('click keydown', this.documentHandler);
@@ -403,15 +447,17 @@ var MathUI;
             this.element.remove();
             this.element = this.documentHandler = undefined;
         };
-        Dialog.prototype.fitContentWidth = function () {
-            this.dialog.css('width', this.wrapper.width() + 'px');
-        };
         Dialog.prototype.fitContentHeight = function () {
-            this.dialog.css('height', this.wrapper.height() + 'px');
+            var _this = this;
+            setTimeout(function () {
+                _this.dialog.css('height', _this.wrapper.height() + 'px');
+            });
         };
         Dialog.prototype.prepareDialog = function (container) {
         };
         Dialog.prototype.click = function (event) {
+        };
+        Dialog.prototype.keydown = function (event) {
         };
         return Dialog;
     })();
@@ -437,17 +483,34 @@ var MathUI;
         function SourceDialog(host) {
             _super.call(this);
             this.host = host;
+            this.sources = this.host.getSources();
         }
+        SourceDialog.prototype.setSelected = function (k) {
+            this.selected = k = (k + this.sources.length) % this.sources.length;
+            this.sourceTabs.removeClass('math-ui-selected');
+            MathUI.$(this.sourceTabs[k]).addClass('math-ui-selected');
+            var src = this.sources[k].source;
+            this.$source.text(typeof src === 'string' ? src : 'working...');
+        };
         SourceDialog.prototype.prepareDialog = function (container) {
-            var pre = MathUI.$(create('pre'));
-            this.host.appendSource(pre);
-            container.append(MathUI.$(create('div')).addClass('math-ui-header').append('MathUI Dashboard'), MathUI.$(create('div')).addClass('math-ui-content').append(pre));
+            this.sourceTabs = MathUI.$(microJQ.map(this.sources, function (item) { return MathUI.$(create('span')).append(item.type)[0]; }));
+            this.$source = MathUI.$(create('pre'));
+            container.append(MathUI.$(create('div')).addClass('math-ui-header').append('Source for ' + this.host.name), MathUI.$(create('div')).addClass('math-ui-content').append(MathUI.$(create('div')).addClass('sourcetypes').append(this.sourceTabs), this.$source));
+            this.setSelected(0);
         };
         SourceDialog.prototype.show = function () {
             _super.prototype.show.call(this, 'math-ui-dialog math-ui-source');
             this.fitContentHeight();
         };
-        SourceDialog.prototype.click = function () {
+        SourceDialog.prototype.click = function (event) {
+            var k = microJQ.indexOf(this.sourceTabs.get(), event.target);
+            if (k >= 0)
+                this.setSelected(k);
+        };
+        SourceDialog.prototype.keydown = function (event) {
+            var k = microJQ.indexOf([37, 39], event.which);
+            if (k >= 0)
+                this.setSelected(this.selected + (k === 0 ? 1 : -1));
         };
         return SourceDialog;
     })(Dialog);
@@ -462,10 +525,13 @@ var MathUI;
             this.handler.init(element);
         }
         MathUIElement.prototype.clonePresentation = function (to) {
-            this.handler.clonePresentation(this.element, to.get(0));
+            this.handler.clonePresentation(this.element, to[0]);
         };
-        MathUIElement.prototype.appendSource = function (container) {
-            container.append(MathUI.$(create('pre')).append('some\nlines'));
+        MathUIElement.prototype.getSources = function () {
+            var _this = this;
+            return microJQ.map(this.handler.getSourceTypes(), function (type) {
+                return { type: type, source: _this.handler.getSourceFor(_this.element, type) };
+            });
         };
         MathUIElement.prototype.changeHighlight = function (on) {
             var el = MathUI.$(this.element);
@@ -490,7 +556,7 @@ var MathUI;
             }, buttons = MathUI.$(microJQ.map(MathUIElement.menuItems, function () { return create('span'); })).addClass('math-ui-item'), menu = MathUI.$(create('div')).addClass('math-ui-eqn-menu').append(MathUI.$(create('span')).addClass('math-ui-header').append(this.name), MathUI.$(create('span')).addClass('math-ui-container').append(buttons)), updateSelected = function (index) {
                 selectedIndex = index;
                 buttons.removeClass('math-ui-selected');
-                MathUI.$(buttons.get(index)).addClass('math-ui-selected');
+                MathUI.$(buttons[index]).addClass('math-ui-selected');
             }, onkeydown = function (ev) {
                 switch (ev.which) {
                     case 13:
@@ -520,7 +586,7 @@ var MathUI;
             });
             el.append(menu).on('keydown', onkeydown).on('blur', onblur);
             updateSelected(0);
-            menu.css('top', (el.get(0).offsetHeight - 3) + 'px');
+            menu.css('top', (el[0].offsetHeight - 3) + 'px');
         };
         MathUIElement.menuItems = [
             { label: 'Zoom', action: MathUIElement.prototype.zoomAction },
@@ -554,8 +620,8 @@ var MathUI;
         };
         DashboardDialog.prototype.show = function () {
             _super.prototype.show.call(this, 'math-ui-dialog math-ui-dashboard');
-            this.fitContentHeight();
             this.buttons.first().focus();
+            this.fitContentHeight();
         };
         DashboardDialog.prototype.click = function (event) {
             var nr = microJQ.indexOf(this.buttons.get(), event.target);
@@ -609,15 +675,8 @@ var MathJaxHandler = (function (_super) {
         MathJax.Hub.Queue(['Typeset', MathJax.Hub, el]);
     };
     MathJaxHandler.prototype.clonePresentation = function (from, to) {
-        var fromscript = from.querySelector('script[type]'), toscript = document.createElement('script');
-        if (!fromscript)
-            return;
-        if (fromscript.textContent !== undefined)
-            toscript.textContent = fromscript.textContent;
-        else
-            toscript.text = fromscript.text;
-        toscript.setAttribute('type', fromscript.getAttribute('type'));
-        to.appendChild(toscript);
+        var script = MathUI.$(from).find('script[type]');
+        MathUI.$(to).append(script.clone().removeAttr('id').removeAttr('MathJax'));
         MathJax.Hub.Queue(['Typeset', MathJax.Hub, to]);
     };
     return MathJaxHandler;

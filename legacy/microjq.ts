@@ -25,6 +25,8 @@ interface MicroJQEventHandler {
 }
 
 interface MicroJQ {
+    length: number;
+    [key: number]: HTMLElement;
     find(selector: string): MicroJQ;
     first(): MicroJQ;
     contents(): MicroJQ;
@@ -33,7 +35,6 @@ interface MicroJQ {
     data(key: string): any;
     attr(attributeName: string, value: string): MicroJQ;
     attr(attributeName: string, value: number): MicroJQ;
-    attr(attributeName: string): string;
     removeAttr(attributeName: string);
     width(): number;
     height(): number;
@@ -45,6 +46,7 @@ interface MicroJQ {
     append(content1: Element, ...content2: any[]): MicroJQ;
     append(content1: any[], ...content2: any[]): MicroJQ;
     append(content1: string, ...content2: any[]): MicroJQ;
+    text(t: string): MicroJQ;
     addClass(className: string): MicroJQ;
     removeClass(className?: string): MicroJQ;
     css(propertyName: string, value: string): MicroJQ;
@@ -274,15 +276,39 @@ interface Indexable<T> {
 
     // MicroJQ
 
-    function MicroEl(els: Element[]) {
-        this.els = els;
+    function MicroEl(elements: Element[]) {
+        this.length = 0;
+        forEach(elements, (el: Element) => {
+            this[this.length++] = el;
+        });
     }
+
+    var deepClone = (function (): (n: Node) => Node {
+        function deepCloneNew(el: Node): Node {
+            return el.cloneNode(true);
+        }
+
+        function deepCloneOld(el: Node): Node {
+            var n = el.cloneNode(false);
+            if (n.nodeType === 1 /*Node.ELEMENT_NODE*/ && el.nodeName.toLowerCase() === 'script') {
+                (<HTMLScriptElement> n).text = (<HTMLScriptElement> el).text;
+            } else {
+                for (var c = el.firstChild; c !== null; c = c.nextSibling)
+                    n.appendChild(deepCloneOld(c));
+            }
+            return n;
+        }
+
+        var s = document.createElement('script');
+        s.text = 'x';
+        return (<HTMLScriptElement> s.cloneNode(true)).text === 'x' ? deepCloneNew : deepCloneOld;
+    })();
 
     MicroEl.prototype = {
 
         find: function (selector: string): MicroJQ {
             var matches = [];
-            forEach(this.els, (el: Element) => {
+            forEach(this, (el: Element) => {
                 forEach(el.querySelectorAll(selector), (n: Node) => {
                     matches.push(n);
                 });
@@ -292,7 +318,7 @@ interface Indexable<T> {
 
         contents: function (): MicroJQ {
             var matches = [];
-            forEach(this.els, (el: Element) => {
+            forEach(this, (el: Element) => {
                 var child: Node = el.firstChild;
                 while (child != null) {
                     matches.push(child);
@@ -302,64 +328,54 @@ interface Indexable<T> {
             return new MicroEl(matches);
         },
 
-        // Note: IE8 does not clone text nodes
         clone: function (): MicroJQ {
-            return new MicroEl(map(this.els, (el: Element) => <Element> el.cloneNode(true)));
+            return new MicroEl(map(this, <(el: Element) => Element> deepClone));
         },
 
         first: function (): MicroJQ {
-            return this.els.length === 0 ? this : new MicroEl([this.els[0]]);
-        },
-
-        attr: function (name: string, value?: string): any {
-            if (value === undefined)
-                return this.els[0].getAttribute(name);
-            else {
-                this.each((k: number, el: Element) => {
-                    el.setAttribute(name, value);
-                });
-                return this;
-            }
+            return this.length === 0 ? this : new MicroEl([this[0]]);
         },
 
         data: function (key: string): any {
-            return this.els[0].getAttribute('data-' + key);
+            return this[0].getAttribute('data-' + key);
         },
 
         width: function (): number {
-            var br = (<HTMLElement> this.els[0]).getBoundingClientRect();
+            var br = (<HTMLElement> this[0]).getBoundingClientRect();
             return br.width !== undefined ? br.width : (br.right - br.left);
         },
 
         height: function (): number {
-            var br = (<HTMLElement> this.els[0]).getBoundingClientRect();
+            var br = (<HTMLElement> this[0]).getBoundingClientRect();
             return br.height !== undefined ? br.height : (br.bottom - br.top);
         },
 
         get: function (index: number): HTMLElement {
-            return index !== undefined ? <HTMLElement> this.els[index] : this.els;
+            return index !== undefined ? <HTMLElement> this[index] : this;
         },
 
         each: function (func: (indexInArray?: number, valueOfElement?: Element) => any): MicroJQ {
-            forEach(this.els, (el: Element, i: number) => {
+            forEach(this, (el: Element, i: number) => {
                 func.call(el, i, el);
             });
             return this;
         },
 
         append: function (...content: any[]): MicroJQ {
-            var els: Element[] = this.els;
             var nodes: Node[] = [];
             forEach(content, (item: any) => {
                 forEach(isArray(item) ? item : [item], (e: any) => {
-                    var newnodes = e instanceof MicroEl ? e.els : typeof e === 'string' ? document.createTextNode(e) : e;
-                    nodes = nodes.concat(newnodes);
+                    if (e instanceof MicroEl) {
+                        Array.prototype.push.apply(nodes, toArray(<MicroJQ> e));
+                    } else {
+                        nodes.push(typeof e === 'string' ? document.createTextNode(e) : e);
+                    }
                 });
             });
-            forEach(els, (el: Element, j: number) => {
-                var clone = j < els.length - 1;
+            forEach(this, (el: Element, j: number) => {
+                var clone = j < this.length - 1;
                 forEach(nodes, (n: Node) => {
-                    el.appendChild(clone ? n.cloneNode() : n);
+                    el.appendChild(clone ? n.cloneNode(true) : n);
                 });
             });
             return this;
@@ -409,9 +425,16 @@ interface Indexable<T> {
                 el.className = '';
         },
 
-        /*attr: (el: Element, attributeName: string, value: string) => {
+        attr: (el: Element, attributeName: string, value: string) => {
             el.setAttribute(attributeName, value);
-        },*/
+        },
+
+        text: (el: Element, t: string) => {
+            if (el.textContent !== undefined)
+                el.textContent = t;
+            else
+                (<HTMLElement> el).innerText = t;
+        },
 
         removeAttr: (el: Element, attributeName: string) => {
             el.removeAttribute(attributeName);
@@ -439,7 +462,7 @@ interface Indexable<T> {
 
     }, (name: string, method: (el: HTMLElement, arg1: any, arg2: any) => void) => {
         MicroEl.prototype[name] = function (arg1: any, arg2: any): MicroJQ {
-            forEach(this.els, (el: HTMLElement) => {
+            forEach(this, (el: HTMLElement) => {
                 method(el, arg1, arg2);
             });
             return this;

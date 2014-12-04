@@ -86,7 +86,6 @@ div.math-ui-backdrop {
 div.math-ui-dialog {
     position: absolute;
     background-color: #d6e3e7;
-    border: 1px solid white;
     padding: 0;
     font-family: sans-serif;
     font-size: 1rem;
@@ -144,7 +143,36 @@ div.math-ui-dialog.math-ui-dashboard {
 }
 
 div.math-ui-dialog.math-ui-source {
-    width: 20em;
+    width: 40em;
+    & > .content {
+        color: #000;
+        padding: 0;
+    }
+    .sourcetypes {
+        font-size: 80%;
+    }
+    .sourcetypes span {
+        display: inline-block;
+        background-color: #d6e3e7;
+        padding: 0.5em 0;
+        width: 6em;
+        text-align: center;
+    }
+    .sourcetypes span.math-ui-selected {
+        font-weight: bold;
+    }
+    .sourcetypes span:hover {
+        background-color: #eaf1f3;
+        cursor: pointer;
+    }
+    pre {
+        width: 100%;
+        height: 20em;
+        margin: 0;
+        padding: 0 0 0 1em;
+        box-sizing: border-box;
+        overflow: scroll;
+    }
 }
 
 div.math-ui-zoom {

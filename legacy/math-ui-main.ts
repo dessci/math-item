@@ -15,6 +15,12 @@ module MathUI {
         clonePresentation(from: Element, to: Element) {
             $(to).append($(from).contents().clone());
         }
+        getSourceTypes(): string[] {
+            return [];
+        }
+        getSourceFor(el: Element, type: string): string {
+            return null;
+        }
     }
 
     interface HandlerDictionary {
@@ -30,6 +36,12 @@ module MathUI {
     var highlighted = false;
 
     class PlainHandler extends Handler {
+        getSourceTypes(): string[] {
+            return ['HTML'];
+        }
+        getSourceFor(el: Element, type: string): string {
+            return type === 'HTML' ? trim((<HTMLElement> el).innerHTML) : null;
+        }
     }
 
     class MathMLHandler extends Handler {
@@ -43,6 +55,13 @@ module MathUI {
     function create(tagName: string): HTMLElement {
         return document.createElement(tagName);
     }
+
+    var trim: (st: string) => string = String.prototype.trim
+        ? (st: string) => st.trim()
+        : ((): { (st: string): string } => {
+            var trimregex = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+            return (st: string) => st.replace(trimregex, '');
+        })();
 
     function stopEvent(event: Event) {
         event.stopPropagation();
@@ -65,7 +84,8 @@ module MathUI {
                 if (event.type === 'click' || event.which === 27) {
                     stopEvent(event);
                     this.close();
-                }
+                } else if (event.type === 'keydown')
+                    this.keydown(event);
             };
             $(parent).append(this.element);
             $(document).on('click keydown', this.documentHandler);
@@ -79,15 +99,16 @@ module MathUI {
             this.element.remove();
             this.element = this.documentHandler = undefined;
         }
-        fitContentWidth() {
-            this.dialog.css('width', this.wrapper.width() + 'px');
-        }
         fitContentHeight() {
-            this.dialog.css('height', this.wrapper.height() + 'px');
+            setTimeout(() => {   // IE8 seems to want this
+                this.dialog.css('height', this.wrapper.height() + 'px');
+            });
         }
         prepareDialog(container: MicroJQ) {
         }
-        click(event: MicroJQEventObject) {
+        click(event: MicroJQMouseEventObject) {
+        }
+        keydown(event: MicroJQKeyEventObject) {
         }
     }
 
@@ -106,23 +127,51 @@ module MathUI {
         }
     }
 
+    interface SourceItem {
+        type: string;
+        source: string;
+    }
+
     class SourceDialog extends Dialog {
+        private sources: SourceItem[];
+        private sourceTabs: MicroJQ;
+        private $source: MicroJQ;
+        private selected: number;
         constructor(private host: MathUIElement) {
             super();
+            this.sources = this.host.getSources();
+        }
+        setSelected(k: number) {
+            this.selected = k = (k + this.sources.length) % this.sources.length;
+            this.sourceTabs.removeClass('math-ui-selected');
+            $(this.sourceTabs[k]).addClass('math-ui-selected');
+            var src = this.sources[k].source;
+            this.$source.text(typeof src === 'string' ? src : 'working...');
         }
         prepareDialog(container: MicroJQ) {
-            var pre = $(create('pre'));
-            this.host.appendSource(pre);
+            this.sourceTabs = $(microJQ.map(this.sources, (item: SourceItem) =>
+                $(create('span')).append(item.type)[0]));
+            this.$source = $(create('pre'));
             container.append(
-                $(create('div')).addClass('math-ui-header').append('MathUI Dashboard'),
-                $(create('div')).addClass('math-ui-content').append(pre)
+                $(create('div')).addClass('math-ui-header').append('Source for ' + this.host.name),
+                $(create('div')).addClass('math-ui-content').append(
+                    $(create('div')).addClass('sourcetypes').append(this.sourceTabs),
+                    this.$source
+                )
             );
+            this.setSelected(0);
         }
         show(): void {
             super.show('math-ui-dialog math-ui-source');
             this.fitContentHeight();
         }
-        click() {
+        click(event: MicroJQMouseEventObject) {
+            var k = microJQ.indexOf(this.sourceTabs.get(), event.target);
+            if (k >= 0) this.setSelected(k);
+        }
+        keydown(event: MicroJQKeyEventObject) {
+            var k = microJQ.indexOf([37, 39], event.which);
+            if (k >= 0) this.setSelected(this.selected + (k === 0 ? 1 : -1));
         }
     }
 
@@ -134,7 +183,7 @@ module MathUI {
             { label: 'Share', action: () => { alert('share'); } },
             { label: 'Dashboard', action: showDashboard }
         ];
-        private name: string;
+        public name: string;
         private handler: Handler;
         constructor(public element: HTMLElement, index: number) {
             var type: string = $(element).data('type');
@@ -145,10 +194,16 @@ module MathUI {
             this.handler.init(element);
         }
         clonePresentation(to: MicroJQ) {
-            this.handler.clonePresentation(this.element, to.get(0));
+            this.handler.clonePresentation(this.element, to[0]);
         }
-        appendSource(container: MicroJQ) {
-            container.append($(create('pre')).append('some\nlines'));
+        getSources(): SourceItem[] {
+            return microJQ.map(this.handler.getSourceTypes(), (type: string) => {
+                return { type: type, source: this.handler.getSourceFor(this.element, type) };
+            });
+            /*return [
+                { type: 'MathML', source: '<math>\n</math>' },
+                { type: 'TeX', source: '\sum_{k=1}^n k^2' }
+            ];*/
         }
         changeHighlight(on: boolean) {
             var el = $(this.element);
@@ -180,7 +235,7 @@ module MathUI {
                 updateSelected = (index: number) => {
                     selectedIndex = index;
                     buttons.removeClass('math-ui-selected');
-                    $(buttons.get(index)).addClass('math-ui-selected');
+                    $(buttons[index]).addClass('math-ui-selected');
                 },
                 onkeydown = (ev: MicroJQEventObject) => {
                     switch (ev.which) {
@@ -212,7 +267,7 @@ module MathUI {
             });
             el.append(menu).on('keydown', onkeydown).on('blur', onblur);
             updateSelected(0);
-            menu.css('top', (el.get(0).offsetHeight - 3) + 'px');
+            menu.css('top', (el[0].offsetHeight - 3) + 'px');
         }
     }
 
@@ -243,8 +298,8 @@ module MathUI {
         }
         show(): void {
             super.show('math-ui-dialog math-ui-dashboard');
-            this.fitContentHeight();
             this.buttons.first().focus();
+            this.fitContentHeight();
         }
         click(event: MicroJQEventObject): void {
             var nr = microJQ.indexOf(this.buttons.get(), event.target);
@@ -287,15 +342,8 @@ class MathJaxHandler extends MathUI.Handler {
         MathJax.Hub.Queue(['Typeset', MathJax.Hub, el]);
     }
     clonePresentation(from: Element, to: Element) {
-        var fromscript = <HTMLScriptElement> from.querySelector('script[type]'),
-            toscript = document.createElement('script');
-        if (!fromscript) return;
-        if (fromscript.textContent !== undefined)
-            toscript.textContent = fromscript.textContent;
-        else
-            toscript.text = fromscript.text;
-        toscript.setAttribute('type', fromscript.getAttribute('type'));
-        to.appendChild(toscript);
+        var script = MathUI.$(from).find('script[type]');
+        MathUI.$(to).append(script.clone().removeAttr('id').removeAttr('MathJax'));
         MathJax.Hub.Queue(['Typeset', MathJax.Hub, to]);
     }
 }
