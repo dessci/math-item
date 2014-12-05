@@ -27,6 +27,7 @@ interface MicroJQEventHandler {
 interface MicroJQ {
     length: number;
     [key: number]: HTMLElement;
+    toArray(): Element[];
     find(selector: string): MicroJQ;
     first(): MicroJQ;
     contents(): MicroJQ;
@@ -38,15 +39,13 @@ interface MicroJQ {
     removeAttr(attributeName: string);
     width(): number;
     height(): number;
-    get(index: number): HTMLElement;
-    get(): HTMLElement[];
     on(events: string, handler: MicroJQEventHandler): MicroJQ;
     off(events: string, handler?: MicroJQEventHandler): MicroJQ;
     append(content1: MicroJQ, ...content2: any[]): MicroJQ;
     append(content1: Element, ...content2: any[]): MicroJQ;
     append(content1: any[], ...content2: any[]): MicroJQ;
     append(content1: string, ...content2: any[]): MicroJQ;
-    text(t: string): MicroJQ;
+    text(txt: string): MicroJQ;
     addClass(className: string): MicroJQ;
     removeClass(className?: string): MicroJQ;
     css(propertyName: string, value: string): MicroJQ;
@@ -57,7 +56,7 @@ interface MicroJQ {
 
 interface JQueryStaticCommon {
     (element: Element): MicroJQ;
-    (element: Document): MicroJQ;
+    (element: Node): MicroJQ;
     (elements: Element[]): MicroJQ;
 }
 
@@ -70,6 +69,8 @@ interface MicroJQStatic extends JQueryStaticCommon {
     objectEach<T>(obj: {[key: string]: T}, callback: (key: string, value: T) => void);
     map<T, U>(array: Indexable<T>, callback: (value?: T, index?: number, array?: Indexable<T>) => U, thisArg?: any): U[];
     indexOf<T>(array: T[], item: T): number;
+    trim(st: string): string;
+    //isArray(obj: any): boolean;
     ready(fn: () => void): void;
 }
 
@@ -156,6 +157,13 @@ interface Indexable<T> {
     function toArray<T>(array: Indexable<T>): T[] {
         return map(array, (item: T) => item);
     }
+
+    var trim: (st: string) => string = String.prototype.trim
+        ? (st: string) => st.trim()
+        : ((): { (st: string): string } => {
+            var trimregex = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+            return (st: string) => st.replace(trimregex, '');
+        })();
 
     function arrayRemove<T>(array: T[], elem: T) {
         var idx = indexOf(array, elem);
@@ -350,10 +358,6 @@ interface Indexable<T> {
             return br.height !== undefined ? br.height : (br.bottom - br.top);
         },
 
-        get: function (index: number): HTMLElement {
-            return index !== undefined ? <HTMLElement> this[index] : this;
-        },
-
         each: function (func: (indexInArray?: number, valueOfElement?: Element) => any): MicroJQ {
             forEach(this, (el: Element, i: number) => {
                 func.call(el, i, el);
@@ -379,6 +383,10 @@ interface Indexable<T> {
                 });
             });
             return this;
+        },
+
+        toArray: function (): Element[]{
+            return toArray(<Indexable<Element>> this);
         }
 
     };
@@ -502,6 +510,8 @@ interface Indexable<T> {
     microJQ.objectEach = objectEach;
     microJQ.map = map;
     microJQ.indexOf = indexOf;
+    microJQ.trim = trim;
+    //microJQ.isArray = isArray;
 
     window.microJQ = microJQ;
 

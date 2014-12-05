@@ -46,7 +46,7 @@
             <p>A paragraph with <span class="math-ui" data-type="tex">\(\sin(x)\)</span> inline math.</p>
 
             <div class="math-ui" data-type="tex">
-                \[\sum_{k=1}^n k^2\]
+                \[J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\bigl({\frac{x}{2}}\bigr)}^{2 m + \alpha}\]
             </div>
 
             <h3>MathML + MathJax</h3>
@@ -55,8 +55,45 @@
 
             <div class="math-ui" data-type="mml">
                 <math display="block">
-                    <mfrac><mrow><mi>x</mi><mo>+</mo><mn>1</mn></mrow><mi>y</mi></mfrac>
-                </math>
+  <mstyle displaystyle="true">
+    <mi>f</mi>
+    <mrow>
+      <mo>(</mo>
+      <mi>a</mi>
+      <mo>)</mo>
+    </mrow>
+    <mo>=</mo>
+ <mfrac>
+        <mn>1</mn>
+        <mrow>
+          <mn>2</mn>
+          <mi>π<!-- π --></mi>
+          <mi>i</mi>
+        </mrow>
+      </mfrac>
+    <msub>
+      <mo>∮</mo>
+      <mrow>
+        <mi>γ</mi>
+      </mrow>
+    </msub>
+    <mfrac>
+      <mrow>
+        <mi>f</mi>
+        <mo>(</mo>
+        <mi>z</mi>
+        <mo>)</mo>
+      </mrow>
+      <mrow>
+        <mi>z</mi>
+        <mo>−</mo>
+        <mi>a</mi>
+      </mrow>
+    </mfrac>
+    <mi>d</mi>
+    <mi>z</mi>
+  </mstyle>
+</math>
             </div>
 
             <h3>EqnStore</h3>

@@ -3,6 +3,7 @@
 declare var microJQ: MicroJQStatic;
 declare var jQuery: JQueryStatic;
 declare var MathJax: any;
+declare var toMathML: any;
 
 module MathUI {
     'use strict';
@@ -15,11 +16,10 @@ module MathUI {
         clonePresentation(from: Element, to: Element) {
             $(to).append($(from).contents().clone());
         }
-        getSourceTypes(): string[] {
+        getSourceTypes(el?: Element): string[] {
             return [];
         }
-        getSourceFor(el: Element, type: string): string {
-            return null;
+        getSourceFor(type: string, el: Element, callback?: (value: any) => void): any {
         }
     }
 
@@ -39,12 +39,24 @@ module MathUI {
         getSourceTypes(): string[] {
             return ['HTML'];
         }
-        getSourceFor(el: Element, type: string): string {
-            return type === 'HTML' ? trim((<HTMLElement> el).innerHTML) : null;
+        getSourceFor(type: string, el: Element): DocumentFragment {
+            if (type === 'HTML')
+                return $(document.createDocumentFragment()).append($(el).contents().clone())[0];
+            return null;
         }
     }
 
     class MathMLHandler extends Handler {
+        getSourceTypes(): string[] {
+            return ['MathML'];
+        }
+        getSourceFor(type: string, el: Element): HTMLElement {
+            if (type === 'MathML') {
+                var math = $(el).find('math');
+                if (math.length) return math[0];
+            }
+            return null;
+        }
     }
 
     var handlers: HandlerDictionary = {
@@ -56,13 +68,6 @@ module MathUI {
         return document.createElement(tagName);
     }
 
-    var trim: (st: string) => string = String.prototype.trim
-        ? (st: string) => st.trim()
-        : ((): { (st: string): string } => {
-            var trimregex = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-            return (st: string) => st.replace(trimregex, '');
-        })();
-
     function stopEvent(event: Event) {
         event.stopPropagation();
         event.preventDefault();
@@ -73,13 +78,13 @@ module MathUI {
         private element: MicroJQ;
         private dialog: MicroJQ;
         private wrapper: MicroJQ;
-        show(className: string, parent?: Element) {
+        show(className: string, prepareDialog: (container: MicroJQ) => void, parent?: Element) {
             parent = parent || document.body;
             this.wrapper = $(create('div')).addClass('math-ui-wrapper');
             this.dialog = $(create('div')).addClass(className).append(this.wrapper);
             this.element = parent === document.body
                 ? $(create('div')).addClass('math-ui-backdrop').append(this.dialog) : this.dialog;
-            this.prepareDialog(this.wrapper);
+            prepareDialog(this.wrapper);
             this.documentHandler = (event: MicroJQEventObject) => {
                 if (event.type === 'click' || event.which === 27) {
                     stopEvent(event);
@@ -104,8 +109,6 @@ module MathUI {
                 this.dialog.css('height', this.wrapper.height() + 'px');
             });
         }
-        prepareDialog(container: MicroJQ) {
-        }
         click(event: MicroJQMouseEventObject) {
         }
         keydown(event: MicroJQKeyEventObject) {
@@ -116,15 +119,32 @@ module MathUI {
         constructor(private host: MathUIElement) {
             super();
         }
-        prepareDialog(container: MicroJQ) {
-            this.host.clonePresentation(container);
-        }
+        
         show(): void {
-            super.show('math-ui-zoom', this.host.element);
+            super.show('math-ui-zoom', (container: MicroJQ) => {
+                this.host.clonePresentation(container);
+            }, this.host.element);
         }
         click() {
             this.close();
         }
+    }
+
+    function sourceToString(obj: any): string {
+        var st;
+        if (obj === null)
+            st = 'Unable to get source';
+        if (typeof obj === 'string') {
+            st = obj;
+        } else if ((<Node> obj).nodeType === 1 /*Node.ELEMENT_NODE*/) {
+            st = (<HTMLElement> obj).outerHTML;
+        } else if ((<Node> obj).nodeType === 3 /*Node.TEXT_NODE*/) {
+            st = (<Text> obj).nodeValue;
+        } else if ((<Node> obj).nodeType === 11 /*Node.DOCUMENT_FRAGMENT_NODE*/) {
+            st = microJQ.map((<DocumentFragment> obj).childNodes, sourceToString).join('');
+        } else
+            st = '[Unknown type]';
+        return microJQ.trim(st);
     }
 
     interface SourceItem {
@@ -139,34 +159,55 @@ module MathUI {
         private selected: number;
         constructor(private host: MathUIElement) {
             super();
-            this.sources = this.host.getSources();
+            var types = this.host.getSourceTypes();
+            this.sources = microJQ.map(types, (type: string, k: number) => {
+                var item = { type: type, source: 'wait...' },
+                    src = this.host.getSourceFor(type, (src: any) => {
+                        item.source = sourceToString(src);
+                        if (k === this.selected)
+                            this.updateSelected();
+                    });
+                if (src !== undefined)
+                    item.source = sourceToString(src);
+                return item;
+            });
+        }
+        updateSelected() {
+            this.$source.text(this.sources[this.selected].source);
         }
         setSelected(k: number) {
-            this.selected = k = (k + this.sources.length) % this.sources.length;
-            this.sourceTabs.removeClass('math-ui-selected');
-            $(this.sourceTabs[k]).addClass('math-ui-selected');
-            var src = this.sources[k].source;
-            this.$source.text(typeof src === 'string' ? src : 'working...');
+            if (this.sources.length === 0) return;
+            k = (k + this.sources.length) % this.sources.length;
+            if (k !== this.selected) {
+                this.selected = k;
+                this.updateSelected();
+                this.sourceTabs.removeClass('math-ui-selected');
+                $(this.sourceTabs[k]).addClass('math-ui-selected');
+                this.updateSelected();
+            }
         }
-        prepareDialog(container: MicroJQ) {
-            this.sourceTabs = $(microJQ.map(this.sources, (item: SourceItem) =>
-                $(create('span')).append(item.type)[0]));
-            this.$source = $(create('pre'));
-            container.append(
-                $(create('div')).addClass('math-ui-header').append('Source for ' + this.host.name),
-                $(create('div')).addClass('math-ui-content').append(
-                    $(create('div')).addClass('sourcetypes').append(this.sourceTabs),
-                    this.$source
-                )
-            );
-            this.setSelected(0);
-        }
-        show(): void {
-            super.show('math-ui-dialog math-ui-source');
+        show() {
+            super.show('math-ui-dialog math-ui-source', (container: MicroJQ) => {
+                this.sourceTabs = $(microJQ.map(this.sources, (item: SourceItem) =>
+                        $(create('span')).append(item.type)[0]));
+                this.$source = $(create('pre'));
+                container.append(
+                    $(create('div')).addClass('math-ui-header').append('Source for ' + this.host.name),
+                    $(create('div')).addClass('math-ui-content').append(
+                        $(create('div')).addClass('sourcetypes').append(this.sourceTabs),
+                        this.$source
+                        )
+                    );
+                this.setSelected(0);
+            });
             this.fitContentHeight();
         }
+        close() {
+            this.sources = this.sourceTabs = this.$source = undefined;
+            super.close();
+        }
         click(event: MicroJQMouseEventObject) {
-            var k = microJQ.indexOf(this.sourceTabs.get(), event.target);
+            var k = microJQ.indexOf(this.sourceTabs.toArray(), event.target);
             if (k >= 0) this.setSelected(k);
         }
         keydown(event: MicroJQKeyEventObject) {
@@ -187,23 +228,21 @@ module MathUI {
         private handler: Handler;
         constructor(public element: HTMLElement, index: number) {
             var type: string = $(element).data('type');
-            if (!(type && type in handlers))
-                type = 'plain-html';
-            this.name = 'Equation ' + (index+1);
+            if (!(type && type in handlers)) {
+                type = $(element).find('math').length === 1 ? 'native-mathml' : 'plain-html';
+            }
+            this.name = 'Equation ' + (index + 1);
             this.handler = handlers[type];
             this.handler.init(element);
         }
         clonePresentation(to: MicroJQ) {
             this.handler.clonePresentation(this.element, to[0]);
         }
-        getSources(): SourceItem[] {
-            return microJQ.map(this.handler.getSourceTypes(), (type: string) => {
-                return { type: type, source: this.handler.getSourceFor(this.element, type) };
-            });
-            /*return [
-                { type: 'MathML', source: '<math>\n</math>' },
-                { type: 'TeX', source: '\sum_{k=1}^n k^2' }
-            ];*/
+        getSourceTypes(): string[] {
+            return this.handler.getSourceTypes(this.element);
+        }
+        getSourceFor(type: string, callback: (src: any) => void): any {
+            return this.handler.getSourceFor(type, this.element, callback);
         }
         changeHighlight(on: boolean) {
             var el = $(this.element);
@@ -286,33 +325,27 @@ module MathUI {
             { label: 'Action 4', action: () => { alert('Action 4 not implemented'); } }
         ];
         private buttons: MicroJQ;
-        prepareDialog(container: MicroJQ) {
-            this.buttons = $(microJQ.map(DashboardDialog.dashboardItems, () => create('button')))
-                .each((k: number, el: Element) => {
-                    $(el).append(DashboardDialog.dashboardItems[k].label);
-                });
-            container.append(
-                $(create('div')).addClass('math-ui-header').append('MathUI Dashboard'),
-                $(create('div')).addClass('math-ui-content').append(this.buttons)
-            );
-        }
         show(): void {
-            super.show('math-ui-dialog math-ui-dashboard');
+            super.show('math-ui-dialog math-ui-dashboard', (container: MicroJQ) => {
+                this.buttons = $(microJQ.map(DashboardDialog.dashboardItems, () => create('button')))
+                    .each((k: number, el: Element) => {
+                        $(el).append(DashboardDialog.dashboardItems[k].label);
+                    });
+                container.append(
+                    $(create('div')).addClass('math-ui-header').append('MathUI Dashboard'),
+                    $(create('div')).addClass('math-ui-content').append(this.buttons)
+                    );
+            });
             this.buttons.first().focus();
             this.fitContentHeight();
         }
         click(event: MicroJQEventObject): void {
-            var nr = microJQ.indexOf(this.buttons.get(), event.target);
+            var nr = microJQ.indexOf(this.buttons.toArray(), event.target);
             if (nr >= 0 && nr < DashboardDialog.dashboardItems.length) {
                 this.close();
                 DashboardDialog.dashboardItems[nr].action(DashboardDialog.dashboardItems[nr].label);
             }
         }
-    }
-
-    export function showDashboard(): void {
-        var dialog = new DashboardDialog();
-        dialog.show();
     }
 
     function elementReady(k: number, element: Element): void {
@@ -323,21 +356,29 @@ module MathUI {
         });
     }
 
-    export function registerHandler(type: string, handler: Handler): void {
-        handlers[type] = handler;
-    }
-
     microJQ.ready(function () {
         if ('jQuery' in window && jQuery.fn.on)
             $ = jQuery;
         $(document).find('.math-ui').each(elementReady);
     });
 
+    export function showDashboard(): void {
+        var dialog = new DashboardDialog();
+        dialog.show();
+    }
+
+    export function registerHandler(type: string, handler: Handler): void {
+        handlers[type] = handler;
+    }
+
 }
 
 // built-in extensions
 
 class MathJaxHandler extends MathUI.Handler {
+    constructor(private original: string, private internal: string) {
+        super();
+    }
     init(el: Element): void {
         MathJax.Hub.Queue(['Typeset', MathJax.Hub, el]);
     }
@@ -346,7 +387,31 @@ class MathJaxHandler extends MathUI.Handler {
         MathUI.$(to).append(script.clone().removeAttr('id').removeAttr('MathJax'));
         MathJax.Hub.Queue(['Typeset', MathJax.Hub, to]);
     }
+    private _getJaxElement(el: Element): any {
+        var jax = MathJax.Hub.getAllJax(el);
+        return jax && jax.length === 1 ? jax[0] : null;
+    }
+    getSourceTypes(el: Element) {
+        var types = [this.original], jax = this._getJaxElement(el);
+        if (jax && jax.root.toMathML)
+            types.push(this.internal);
+        return types;
+    }
+    getSourceFor(type: string, el: Element, callback: (value: any) => void): string {
+        var jax = this._getJaxElement(el);
+        if (!jax) return null;
+        if (type === this.original) {
+            return jax.originalText;
+        } else if (type === this.internal && jax.root.toMathML) {
+            try {
+                return jax.root.toMathML('');
+            } catch (err) {
+                if (!err.restart) { throw err; }
+                MathJax.Callback.After(['toMathML', jax, callback], err.restart);
+            }
+        }
+    }
 }
 
-MathUI.registerHandler('tex', new MathJaxHandler());
-MathUI.registerHandler('mml', new MathJaxHandler());
+MathUI.registerHandler('tex', new MathJaxHandler('TeX', 'MathML'));
+MathUI.registerHandler('mml', new MathJaxHandler('MathML (original)', 'MathML (MathJax)'));
