@@ -1,0 +1,192 @@
+﻿.math-ui {
+    position: relative;
+    border: 3px solid transparent;
+    padding: 1px;
+    margin: -4px;  /* -(border-width + padding) */
+    outline: none;
+    cursor: pointer;
+   
+    &:hover, &.highlight {
+        border: 3px solid #afbfff;
+    }
+
+    &:focus {
+        border: 3px solid #4f9fcf;
+    }
+
+    & > div.math-ui-eqn-menu {
+        position: absolute;
+        left: 0;
+        font-family: sans-serif;
+        font-size: 12px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1;
+
+        & > span.math-ui-header {
+            background-color: #4f7dc9;
+            color: white;
+            padding: 0.5em;
+        }
+    
+        & > span.math-ui-container {
+            margin: 0;
+            padding: 0;
+            display: inline-block;
+
+            & > span.math-ui-item {
+                display: inline-block;
+                background-color: #d6e3e7;
+                padding: 0.5em 0;
+                width: 6em;
+                text-align: center;
+
+                &.math-ui-selected {
+                    font-weight: bold;
+                }
+        
+                &:hover {
+                    background-color: #eaf1f3;
+                }
+            }
+
+        }
+    }
+}
+
+span.math-ui {
+    display: inline-block;
+}
+
+div.math-ui {
+    display: block;
+    text-align: center;
+}
+
+div.math-ui-backdrop {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: transparent;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#1A000000,endColorstr=#1A000000);   /* IE*/
+    background-color: rgba(0,0,0,0.1);
+    z-index: 100000;
+
+    & > div.math-ui-dialog {
+        margin: auto;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+    }
+}
+
+div.math-ui-dialog {
+    position: absolute;
+    background-color: #d6e3e7;
+    padding: 0;
+    font-family: sans-serif;
+    font-size: 1rem;
+
+    overflow: hidden;
+    z-index: 100001;
+
+    & > div.math-ui-wrapper {
+        padding: 0;
+        margin: 0;
+        border: 1px solid white;
+    }
+    .math-ui-header {
+        background-color: #4f7dc9;
+        color: #fff;
+        height: 3em;
+        line-height: 3em;
+        padding: 0 1em;
+        margin: 0;
+    }
+    .math-ui-content {
+        color: #000;
+        padding: 0;
+        margin: 0;
+    }
+
+}
+
+div.math-ui-dialog.math-ui-dashboard {
+    width: 20em;
+
+    .math-ui-content button {
+        background-color: transparent;
+        color: #333;
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+        border: none;
+        outline: none;
+        padding: 0.5em 1em;
+        margin: 0;
+        font-size: 1em;
+        text-align: left;
+        width: 100%;
+        display: block;
+
+        &:hover {
+            background-color: #eaf1f3;
+        }
+
+        &:focus {
+            font-weight: bold;
+        }
+    }
+}
+
+div.math-ui-dialog.math-ui-source {
+    width: 40em;
+    & > .content {
+        color: #000;
+        padding: 0;
+    }
+    .sourcetypes {
+        font-size: 80%;
+    }
+    .sourcetypes span {
+        display: inline-block;
+        background-color: #d6e3e7;
+        padding: 0.5em 0;
+        width: 6em;
+        text-align: center;
+    }
+    .sourcetypes span.math-ui-selected {
+        font-weight: bold;
+    }
+    .sourcetypes span:hover {
+        background-color: #eaf1f3;
+        cursor: pointer;
+    }
+    pre {
+        width: 100%;
+        height: 20em;
+        margin: 0;
+        padding: 0 0 0 1em;
+        box-sizing: border-box;
+        overflow: scroll;
+    }
+}
+
+div.math-ui-zoom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 3px solid black;
+    padding: 0;
+    background: white;
+    color: black;
+    z-index: 1;
+
+    & > div.math-ui-wrapper {
+        font-size: 200%;
+    }
+
+}

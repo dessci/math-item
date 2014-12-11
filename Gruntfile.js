@@ -1,30 +1,84 @@
 module.exports = function(grunt) {
-
+    var name = 'math-ui-v0.1';
+    
     grunt.initConfig({
-        'connect': {
-            demo: {
+        typescript: {
+            dist: {
+                src: ['src/typescript/*.ts'],
+                dest: 'dist/' + name + '.js',
                 options: {
-                    open: true,
-                    keepalive: true
+                    target: 'es3',
+                    sourceMap: true,
+                    declaration: true
+                }
+            },
+            tests: {
+                src: ['test/*.ts'],
+                dest: '.',
+                options: {
+                    target: 'es3'
                 }
             }
         },
-        'gh-pages': {
-            options: {
-                clone: 'bower_components/math-ui'
+        uglify: {
+            dist: {
+                src: ['dist/' + name + '.js'],
+                dest: 'dist/' + name + '.min.js'
+            }
+        },
+        sass: {
+            dist: {
+                files: {
+                    'dist/math-ui-v0.1.css': 'src/sass/math-ui.scss'
+                }
             },
-            src: [
-                'bower_components/**/*',
-                '!bower_components/math-ui/**/*',
-                'demo/*', 'src/*', 'index.html'
-            ]
+            examples: {
+                files: {
+                    'examples/main.css': 'examples/main.scss'
+                }
+            }
+        },
+        connect: {
+            root: {
+                options: {
+                    port: 8080,
+                    base: './'
+                }
+            }
+        },
+        watch: {
+            srcJs: {
+                files: ['src/typescript/*.ts'],
+                tasks: ['typescript:dist']
+            },
+            srcCss: {
+                files: ['src/sass/*.scss'],
+                tasks: ['sass:dist']
+            },
+            examples: {
+                files: ['examples/*.scss'],
+                tasks: ['sass:examples']
+            },
+            tests: {
+                files: ['test/*.ts'],
+                tasks: ['typescript:tests']
+            }
+        },
+        clean: {
+            examples: ['examples/*.css'],
+            tests: ['test/*.js'],
+            dist: ['dist']
         }
     });
-
+ 
+    grunt.loadNpmTasks('grunt-typescript');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-sass');
     grunt.loadNpmTasks('grunt-contrib-connect');
-    grunt.loadNpmTasks('grunt-gh-pages');
+    grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-clean');
 
-    grunt.registerTask('deploy', ['gh-pages']);
-    grunt.registerTask('server', ['connect']);
+    grunt.registerTask('default', ['clean', 'typescript', 'sass', 'uglify']);
+    grunt.registerTask('serve', ['connect', 'watch']);
 
 };
