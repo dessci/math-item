@@ -22,49 +22,20 @@ module MathUI {
         }
     }
 
-    function dumpXML(n: Node, indent: string): string {
-        if (n.nodeType === 1) {
-            var name = n.nodeName.toLowerCase();
-            var children: Node[] = [];
-            for (var c = (<Element> n).firstChild; c !== null; c = c.nextSibling)
-                children.push(c);
-            while (children.length !== 0 && children[0].nodeType === 3 && !_.trim(children[0].nodeValue))
-                children.splice(0, 1);
-            while (children.length !== 0 && children[children.length - 1].nodeType === 3 && !_.trim(children[children.length - 1].nodeValue))
-                children.pop();
-            if (children.length == 0)
-                return '<' + name + '></' + name + '>';
-            var r = '<' + name + '>';
-            var prevIsText = false;
-            _.each(children, (c: Node) => {
-                if (c.nodeType === 3) {
-                    prevIsText = true;
-                } else if (prevIsText) {
-                    prevIsText = false;
-                } else {
-                    r += '\n  ' + indent;
-                }
-                r += dumpXML(c, indent + '  ');
-            });
-            r += (prevIsText ? '' : '\n' + indent) + '</' + name + '>';
-            return r;
-        } else if (n.nodeType === 3) {
-            return n.nodeValue;
-        }
-        return '[!]';
-    }
-
     class MathMLHandler extends Handler {
         canHandle(el: Element): boolean {
             return $(el).find('math').length === 1;
         }
         getSourceTypes(): string[] {
-            return ['MathML'];
+            return ['MathML/original', 'MathML/prettified'];
         }
-        getSourceFor(type: string, el: Element): string {
-            if (type === 'MathML') {
+        getSourceFor(type: string, el: Element): any {
+            if (type === 'MathML/original') {
                 var math = $(el).find('math');
-                if (math.length) return dumpXML(math[0], '');
+                if (math.length) return math[0];
+            } else if (type === 'MathML/prettified') {
+                var math = $(el).find('math');
+                if (math.length) return prettifyMathML(math[0], '');
             }
             return null;
         }
@@ -156,7 +127,7 @@ module MathUI {
         }
     }
 
-    MathUI.registerHandler('tex', new MathJaxHandler('TeX', 'MathML'));
+    MathUI.registerHandler('tex', new MathJaxHandler('TeX/original', 'MathML/MathJax'));
     MathUI.registerHandler('mml', new MathJaxHandler('MathML/original', 'MathML/MathJax'));
 }
 
@@ -172,13 +143,24 @@ module MathUI {
             $(to).append($(from).find('img').clone());
         }
         getSourceTypes(el: Element) {
-            return $(el).find('script[type="math/mml"]').length === 1 ? ['MathML'] : [];
+            if ($(el).find('script[type="math/mml"]').length !== 1)
+                return [];
+            var types = ['MathML/original'];
+            if (DOMParser)
+                types.push('MathML/prettified');
+            return types;
         }
         getSourceFor(type: string, el: Element, callback: (value: string) => void): string {
-            if (type === 'MathML') {
-                var script = $(el).find('script[type="math/mml"]');
-                if (script.length === 1)
-                    return script.text();
+            var script = $(el).find('script[type="math/mml"]');
+            if (script.length === 1) {
+                var src = script.text();
+                if (type === 'MathML/original') {
+                    return src;
+                } else if (type === 'MathML/prettified') {
+                    var parser = new DOMParser();
+                    var doc = parser.parseFromString(src, 'application/xml');
+                    return prettifyMathML(<HTMLElement> doc.firstChild, '');
+                }
             }
             return null;
         }

@@ -5,6 +5,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Legacy Math UI</title>
+    <script>
+        var elems = ['math', 'mfrac', 'mrow', 'mi', 'mo', 'mn', 'malignmark', 'msup'];
+        for (var k = 0; k < elems.length; k++) document.createElement(elems[k]);
+    </script>
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
     <link rel="stylesheet" href="main.css" />
     <link rel="stylesheet" href="../dist/math-ui-v0.1.css" />
@@ -37,7 +41,7 @@
 
             <div class="math-ui">
                 <math display="block">
-                    <mfrac><mrow><mi>x</mi><mo>+</mo><mn>1 <malignmark></malignmark> 4</mn></mrow><mi>y</mi></mfrac>
+                    <mfrac><mrow><mi>x</mi><mo>+</mo><mn>  1  + <malignmark></malignmark> 4 </mn></mrow><mi>y</mi></mfrac>
                 </math>
             </div>
 
@@ -359,8 +363,6 @@
                     MathUI.showDashboard();
                 });
             });
-
-            MathUI.test();
         })();
     </script>
 </body>

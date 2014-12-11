@@ -400,43 +400,23 @@ module MathUI {
         return handlerStore.put(type, handler);
     }
 
-    function dump(n: Node, indent: string): string {
-        if (n.nodeType === 1) {
-            var name = n.nodeName.toLowerCase();
-            var children: Node[] = [];
-            for (var c = (<Element> n).firstChild; c !== null; c = c.nextSibling)
-                children.push(c);
-            while (children.length !== 0 && children[0].nodeType === 3 && !_.trim(children[0].nodeValue))
-                children.splice(0, 1);
-            while (children.length !== 0 && children[children.length - 1].nodeType === 3 && !_.trim(children[children.length - 1].nodeValue))
-                children.pop();
-            if (children.length == 0)
-                return '<' + name + '></' + name + '>';
-            var r = '<' + name + '>';
-            var prevIsText = false;
-            _.each(children, (c: Node) => {
-                if (c.nodeType === 3) {
-                    r += dump(c, '');
-                    prevIsText = true;
-                } else if (prevIsText) {
-                    r += dump(c, indent + '  ');
-                    prevIsText = false;
-                } else {
-                    r += '\n  ' + indent + dump(c, indent + '  ');
-                }
-            });
-            r += (prevIsText ? '' : '\n' + indent) + '</' + name + '>';
-            return r;
-        } else if (n.nodeType === 3) {
-            return n.nodeValue;
-        }
-        return '[!]';
-    }
+    var mathml_token_elements = ['mi', 'mn', 'mo', 'ms', 'mtext', 'ci', 'cn', 'cs', 'csymbol', 'annotation'];
 
-    export function test() {
-        var m = document.querySelector('math[display="block"]');
-        //console.log(m);
-        console.log(dump(m, ''));
+    export function prettifyMathML(el: HTMLElement, indent: string): string {
+        if (el.nodeType !== 1)
+            throw 'prettifyMathMLNode: expected Element node';
+        var name = el.nodeName.toLowerCase();
+        var r = indent + '<' + name + _.map(el.attributes, (attr: Attr) => ' ' + attr.name + '="' + attr.value + '"').join('') + '>';
+        if (_.contains(mathml_token_elements, name)) {
+            r += _.words(el.innerHTML).join(' ');
+        } else {
+            var children = _.filter($(el).contents().toArray(), (n: Element) => n.nodeType === 1);
+            var items = _.map(children, (c: HTMLElement) => prettifyMathML(<HTMLElement> c, indent + '  '));
+            if (items)
+                r += '\n' + items.join('\n') + '\n' + indent;
+        }
+        r += '</' + name + '>';
+        return r;
     }
 
 }

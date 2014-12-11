@@ -1,2 +1,9 @@
 node_modules/
 dist/
+.sass-cache
+examples/*.css
+test/*.js
+.ntvs_analysis.dat
+math-ui.njsproj
+math-ui.v12.suo
+math-ui.sln
