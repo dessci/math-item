@@ -129,24 +129,62 @@
             return (st: string) => st.replace(regex, '');
         })();
 
+    var utils: IUtils = {
+        each: each,
+        map: map,
+        filter: filter,
+        indexOf: indexOf,
+        contains: contains,
+        union: union,
+        difference: difference,
+        without: <T>(list: List<T>, elem: T) => filter(list, (item: T) => item !== elem),
+        trim: trim,
+        words: (st: string) => {
+            st = trim(st);
+            return st ? st.split(/\s+/) : [];
+        },
+        isArray: (obj: any) => Object.prototype.toString.call(obj) === '[object Array]',
+        toArray: <T>(list: List<T>): T[]=> map(list, (item: T) => item)
+    };
+
     export function getUtils(): IUtils {
-        return {
-            each: each,
-            map: map,
-            filter: filter,
-            indexOf: indexOf,
-            contains: contains,
-            union: union,
-            difference: difference,
-            without: <T>(list: List<T>, elem: T) => filter(list, (item: T) => item !== elem),
-            trim: trim,
-            words: (st: string) => {
-                st = trim(st);
-                return st ? st.split(/\s+/) : [];
-            },
-            isArray: (obj: any) => Object.prototype.toString.call(obj) === '[object Array]',
-            toArray: <T>(list: List<T>): T[] => map(list, (item: T) => item)
-        };
+        return utils;
+    }
+
+    interface IThen<T> {
+        resolved: (val: T) => void;
+        rejected: (reason: any) => void;
+    }
+
+    export class Promise<T> {
+        private _thens: IThen<T>[] = [];
+        constructor(callback: (resolve: (val: T) => void, reject?: (reason: any) => void) => void) {
+            var flush = () => {
+                each(this._thens, (then: IThen<T>) => {
+                    this.then(then.resolved, then.rejected);
+                });
+                delete this._thens;
+            }
+            callback((val: T) => {
+                this.then = (resolved: (val: T) => void) => {
+                    resolved(val);
+                };
+                flush();
+            }, (reason: any) => {
+                this.then = (resolved: (val: T) => void, rejected?: (reason: any) => void) => {
+                    if (rejected) rejected(reason);
+                };
+                flush();
+            });
+        }
+        then(resolved: (val: T) => void, rejected?: (reason: any) => void) {
+            this._thens.push({ resolved: resolved, rejected: rejected });
+        }
+        static resolve<T>(val: T): Promise<T> {
+            return new Promise((resolve: (val: T) => void) => {
+                resolve(val);
+            });
+        }
     }
 
 }

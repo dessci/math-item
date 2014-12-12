@@ -1,4 +1,5 @@
 ﻿/// <reference path="math-ui-microjq.ts" />
+/// <reference path="math-ui-utils.ts" />
 /// <reference path="../../typings/jquery.d.ts" />
 
 module MathUI {
@@ -17,18 +18,23 @@ module MathUI {
         return $;
     }
 
+    export interface SourceData {
+        type: string;
+        subtype?: string;
+        source: string;
+    }
+
     export class Handler {
         canHandle(el: Element): boolean {
-            // disable auto-discover by default
-            return false;
+            return false;  // disable auto-discover by default
         }
         init(el: Element) {
         }
         clonePresentation(from: Element, to: Element) {
             $(to).append($(from).contents().clone());
         }
-        getSourceTypes(el?: Element): string[] {
-            return [];
+        getSources(el?: Element): Promise<SourceData[]> {
+            return Promise.resolve([]);
         }
         getSourceFor(type: string, el: Element, callback?: (value: any) => void): any {
             return null;
@@ -139,58 +145,26 @@ module MathUI {
         }
     }
 
-    function sourceToString(obj: any): string {
-        var st;
-        if (obj === null)
-            st = 'Unable to get source';
-        if (typeof obj === 'string') {
-            st = obj;
-        } else if ((<Node> obj).nodeType === 1 /*Node.ELEMENT_NODE*/) {
-            st = (<HTMLElement> obj).outerHTML;
-        } else if ((<Node> obj).nodeType === 3 /*Node.TEXT_NODE*/) {
-            st = (<Text> obj).nodeValue;
-        } else if ((<Node> obj).nodeType === 11 /*Node.DOCUMENT_FRAGMENT_NODE*/) {
-            st = _.map((<DocumentFragment> obj).childNodes, sourceToString).join('');
-        } else
-            st = '[Unknown type]';
-        return _.trim(st);
-    }
-
-    class SourceItem {
-        public majorType: string;
-        public minorType: string;
-        public source: string = 'wait...';
-        constructor(public type: string) {
-            var subtypes = type.split('/', 2);
-            this.majorType = subtypes[0];
-            this.minorType = subtypes[1];
-        }
-        toString(): string {
-            return this.minorType ? this.majorType + ' (' + this.minorType + ')' : this.majorType;
-        }
+    function sourceDataToLabel(sd: SourceData) {
+        var label = sd.type;
+        if (sd.subtype) label += ' (' + sd.subtype + ')';
+        return label;
     }
 
     class SourceDialog extends Dialog {
-        private sources: SourceItem[];
+        private sources: SourceData[];
         private sourceTabs: MicroJQ;
         private $source: MicroJQ;
         private selected: number;
         constructor(private host: MathUIElement) {
             super();
-            var types = this.host.getSourceTypes();
-            this.sources = _.map(types, (type: any, k: number) => {
-                var item = new SourceItem(type),
-                    src = this.host.getSourceFor(type, (src: any) => {
-                        item.source = sourceToString(src);
-                        if (k === this.selected)
-                            this.updateSelected();
-                    });
-                if (src !== undefined)
-                    item.source = sourceToString(src);
-                return item;
+            this.host.getSources().then((sources: SourceData[]) => {
+                this.sources = sources;
+                this.updateSelected();
             });
         }
         updateSelected() {
+            if (this.selected === undefined) return;
             this.$source.text(this.sources[this.selected].source);
         }
         setSelected(k: number) {
@@ -206,8 +180,8 @@ module MathUI {
         }
         show() {
             super.show('math-ui-dialog math-ui-source', (container: MicroJQ) => {
-                this.sourceTabs = $(_.map(this.sources, (item: SourceItem) =>
-                        $(create('span')).append(item.toString())[0]));
+                this.sourceTabs = $(_.map(this.sources, (item: SourceData) =>
+                    $(create('span')).append(sourceDataToLabel(item))[0]));
                 this.$source = $(create('pre'));
                 container.append(
                     $(create('div')).addClass('math-ui-header').append('Source for ' + this.host.name),
@@ -263,11 +237,8 @@ module MathUI {
         clonePresentation(to: MicroJQ) {
             this.handler.clonePresentation(this.element, to[0]);
         }
-        getSourceTypes(): string[] {
-            return this.handler.getSourceTypes(this.element);
-        }
-        getSourceFor(type: string, callback: (src: any) => void): any {
-            return this.handler.getSourceFor(type, this.element, callback);
+        getSources(): Promise<SourceData[]> {
+            return this.handler.getSources(this.element);
         }
         changeHighlight(on: boolean) {
             var el = $(this.element);
@@ -402,9 +373,10 @@ module MathUI {
 
     var mathml_token_elements = ['mi', 'mn', 'mo', 'ms', 'mtext', 'ci', 'cn', 'cs', 'csymbol', 'annotation'];
 
-    export function prettifyMathML(el: HTMLElement, indent: string): string {
+    export function prettifyMathML(el: HTMLElement, indent?: string): string {
         if (el.nodeType !== 1)
             throw 'prettifyMathMLNode: expected Element node';
+        if (indent === undefined) indent = '';
         var name = el.nodeName.toLowerCase();
         var r = indent + '<' + name + _.map(el.attributes, (attr: Attr) => ' ' + attr.name + '="' + attr.value + '"').join('') + '>';
         if (_.contains(mathml_token_elements, name)) {
@@ -417,6 +389,28 @@ module MathUI {
         }
         r += '</' + name + '>';
         return r;
+    }
+
+    export function nodeToString(obj: any): string {
+        if ((<Node> obj).nodeType === 1 /*Node.ELEMENT_NODE*/) {
+            return (<HTMLElement> obj).outerHTML;
+        } else if ((<Node> obj).nodeType === 3 /*Node.TEXT_NODE*/) {
+            return (<Text> obj).nodeValue;
+        } else if ((<Node> obj).nodeType === 11 /*Node.DOCUMENT_FRAGMENT_NODE*/) {
+            return _.map((<DocumentFragment> obj).childNodes, nodeToString).join('');
+        }
+        throw 'Unsupported node type';
+    }
+
+    export function parseXML(st: string): Document {
+        if ('DOMParser' in window) {
+            var parser = new DOMParser();
+            try {
+                return parser.parseFromString(st, 'application/xml');
+            } catch (ex) {
+            }
+        }
+        return null;
     }
 
 }
