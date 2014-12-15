@@ -9,36 +9,37 @@ module MathUI {
     var _ = getUtils();
 
     class PlainHandler extends Handler {
-        canHandle(el: Element): boolean {
+        canHandle(el: HTMLElement): boolean {
             return true;  // act as a catch-all
         }
-        getSources(el: Element): Promise<SourceData[]> {
-            return Promise.resolve([{
-                type: 'HTML',
-                source: nodeToString($(document.createDocumentFragment()).append($(el).contents().clone())[0])
-            }]);
+        getSources(el: HTMLElement): Promise<SourceData[]> {
+            return Promise.resolve([{ type: 'HTML', source: el.innerHTML }]);
         }
     }
 
     class MathMLHandler extends Handler {
-        canHandle(el: Element): boolean {
-            return $(el).find('math').length === 1;
-        }
-        getSources(el: Element): Promise<SourceData[]> {
-            var result = [];
-            var math = $(el).find('math');
-            if (math.length === 1) {
-                result = [{
-                    type: 'MathML',
-                    subtype: 'original',
-                    source: nodeToString(math[0])
-                }, {
-                    type: 'MathML',
-                    subtype: 'prettified',
-                    source: prettifyMathML(math[0])
-                }];
+        static getMathRoot(el: HTMLElement): Element {
+            var children = $(el).children();
+            if (children.length === 1 && children[0].nodeName.toLowerCase() === 'math')
+                return children[0];
+            if (children.length && children[0] instanceof HTMLUnknownElement) {
+                var doc = $.parseXML(el.innerHTML);
+                if (doc.documentElement && doc.documentElement.nodeName.toLowerCase() === 'math')
+                    return doc.documentElement;
             }
-            return Promise.resolve(result);
+            return null;
+        }
+        canHandle(el: HTMLElement): boolean {
+            return MathMLHandler.getMathRoot(el) !== null;
+        }
+        getSources(el: HTMLElement): Promise<SourceData[]> {
+            var root = MathMLHandler.getMathRoot(el);
+            if (root !== null)
+                return Promise.resolve([
+                    { type: 'MathML', subtype: 'original', source: el.innerHTML },
+                    { type: 'MathML', subtype: 'prettified', source: prettifyMathML(root) }
+                ]);
+            return Promise.resolve([]);
         }
     }
 
@@ -82,15 +83,15 @@ module MathUI {
         constructor(private original: string[], private internal: string[]) {
             super();
         }
-        init(el: Element): void {
+        init(el: HTMLElement): void {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, el]);
         }
-        clonePresentation(from: Element, to: Element) {
+        clonePresentation(from: HTMLElement, to: HTMLElement) {
             var script = $(from).find('script[type]');
             $(to).append(script.clone().removeAttr('id').removeAttr('MathJax'));
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, to]);
         }
-        getSources(el: Element): Promise<SourceData[]> {
+        getSources(el: HTMLElement): Promise<SourceData[]> {
             var result: SourceData[] = [];
             var jaxs = MathJax.Hub.getAllJax(el);
             if (jaxs && jaxs.length === 1) {
@@ -132,22 +133,21 @@ module MathUI {
         clonePresentation(from: Element, to: Element) {
             $(to).append($(from).find('img').clone());
         }
-        getSources(el: Element): Promise<SourceData[]> {
+        getSources(el: HTMLElement): Promise<SourceData[]> {
             var result: SourceData[] = [];
             var script = $(el).find('script[type="math/mml"]');
             if (script.length === 1) {
-                var src = script.text(),
-                    doc = parseXML(src);
+                var src = script.text(), doc = $.parseXML(src);
                 result.push({
                     type: 'MathML',
                     subtype: 'original',
                     source: src
                 });
-                if (doc && doc.firstChild && doc.firstChild.nodeType === 1 && doc.firstChild.nodeName === 'math')
+                if (doc && doc.documentElement && doc.documentElement.nodeName === 'math')
                     result.push({
                         type: 'MathML',
                         subtype: 'prettified',
-                        source: prettifyMathML(<HTMLElement> doc.firstChild)
+                        source: prettifyMathML(doc.documentElement)
                     });
             }
             return Promise.resolve(result);

@@ -37,6 +37,7 @@ module MathUI {
         find(selector: string): MicroJQ;
         first(): MicroJQ;
         contents(): MicroJQ;
+        children(): MicroJQ;
         clone(): MicroJQ;
         each(func: (index: number, elem: Element) => any): MicroJQ;
         data(key: string): any;
@@ -65,11 +66,9 @@ module MathUI {
         (element: Element): MicroJQ;
         (element: Node): MicroJQ;
         (elements: Element[]): MicroJQ;
-        ready(fn: () => void): void;
-    }
-
-    interface Window {
-        microJQ: MicroJQStatic;
+        parseXML(data: string): XMLDocument;
+        serializeXML(n: Node): string;
+        ready: () => Promise<void>;
     }
 
     interface ElementEvents extends Dictionary<MicroJQEventHandler[]> { }
@@ -81,7 +80,7 @@ module MathUI {
 
     interface ElementStoreMap extends Dictionary<ElementStore> { }
 
-    export var microJQ: MicroJQStatic = (function (window: any, document: Document, undefined?: any) {
+    export var microJQ: MicroJQStatic = (function (window: Window, document: Document, undefined?: any) {
         'use strict';
 
         var _ = getUtils();
@@ -244,6 +243,19 @@ module MathUI {
                 : (<HTMLElement> el).innerText;
         }
 
+        function allChildren(collection: List<Node>, filter?: (n: Node) => boolean): Element[] {
+            var matches = [];
+            _.each(collection, (el: Node) => {
+                var child: Node = el.firstChild;
+                while (child != null) {
+                    if (!filter || filter(child))
+                        matches.push(child);
+                    child = child.nextSibling;
+                }
+            });
+            return matches;
+        }
+
         MicroEl.prototype = {
 
             find: function (selector: string): MicroJQ {
@@ -257,15 +269,11 @@ module MathUI {
             },
 
             contents: function (): MicroJQ {
-                var matches = [];
-                _.each(this, (el: Element) => {
-                    var child: Node = el.firstChild;
-                    while (child != null) {
-                        matches.push(child);
-                        child = child.nextSibling;
-                    }
-                });
-                return new MicroEl(matches);
+                return new MicroEl(allChildren(this));
+            },
+
+            children: function (): MicroJQ {
+                return new MicroEl(allChildren(this, (n: Node) => n.nodeType === 1));
             },
 
             clone: function (): MicroJQ {
@@ -402,30 +410,53 @@ module MathUI {
             return new MicroEl(_.isArray(arg) ? arg : [arg]);
         };
 
-        microJQ.ready = function (fn: () => void) {
-            var fired = false;
+        microJQ.ready = (function () {
+            var promise = document.readyState === 'complete'
+                ? Promise.resolve<void>()
+                : new Promise<void>(function (resolve: () => void) {
+                    var fired = false;
 
-            function trigger() {
-                if (fired) return;
-                fired = true;
-                fn();
-            }
+                    function trigger() {
+                        if (fired) return;
+                        fired = true;
+                        resolve();
+                    }
 
-            if (document.readyState === 'complete') {
-                setTimeout(trigger);
-            } else {
-                if (document.addEventListener) {
-                    document.addEventListener('DOMContentLoaded', trigger);
-                }
-                if (document.attachEvent) {
-                    document.attachEvent('onreadystatechange', (): void => {
-                        if (document.readyState === 'complete')
-                            trigger();
-                    });
-                }
-                addEventListenerFn(window, 'load', trigger);
-            }
-        };
+                    if (document.addEventListener) {
+                        document.addEventListener('DOMContentLoaded', trigger);
+                    }
+                    if (document.attachEvent) {
+                        document.attachEvent('onreadystatechange', (): void => {
+                            if (document.readyState === 'complete')
+                                trigger();
+                        });
+                    }
+                    addEventListenerFn(window, 'load', trigger);
+                });
+
+            return () => promise;
+        })();
+
+        // http://stackoverflow.com/a/7951947/212069
+        microJQ.parseXML = typeof DOMParser === 'function'
+            ? (data: string) => (new DOMParser()).parseFromString(data, 'text/xml')
+            : typeof ActiveXObject === 'function' && new ActiveXObject('Microsoft.XMLDOM')
+            ? (data: string) => {
+                var xmlDoc = new ActiveXObject('Microsoft.XMLDOM');
+                xmlDoc.async = 'false';
+                xmlDoc.loadXML(data);
+                return xmlDoc;
+            } : () => {
+                throw new Error('parseXML not available');
+            };
+ 
+        // http://stackoverflow.com/a/4916895/212069
+        microJQ.serializeXML = typeof XMLSerializer === 'function'
+            ? (n: Node) => (new XMLSerializer()).serializeToString(n)
+            : (n: Node) => {
+                if (!('xml' in n)) throw new Error('serializeXML not supported');
+                return (<any> n).xml;
+            };
 
         return microJQ;
 

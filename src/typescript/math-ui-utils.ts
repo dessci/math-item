@@ -140,6 +140,7 @@
         without: <T>(list: List<T>, elem: T) => filter(list, (item: T) => item !== elem),
         trim: trim,
         words: (st: string) => {
+            if (st == null) return [];
             st = trim(st);
             return st ? st.split(/\s+/) : [];
         },
@@ -158,7 +159,7 @@
 
     export class Promise<T> {
         private _thens: IThen<T>[] = [];
-        constructor(callback: (resolve: (val: T) => void, reject?: (reason: any) => void) => void) {
+        constructor(callback: (resolve: (val?: T) => void, reject?: (reason: any) => void) => void) {
             var flush = () => {
                 each(this._thens, (then: IThen<T>) => {
                     this.then(then.resolved, then.rejected);
@@ -177,10 +178,10 @@
                 flush();
             });
         }
-        then(resolved: (val: T) => void, rejected?: (reason: any) => void) {
+        then(resolved: (val?: T) => void, rejected?: (reason: any) => void) {
             this._thens.push({ resolved: resolved, rejected: rejected });
         }
-        static resolve<T>(val: T): Promise<T> {
+        static resolve<T>(val?: T): Promise<T> {
             return new Promise((resolve: (val: T) => void) => {
                 resolve(val);
             });

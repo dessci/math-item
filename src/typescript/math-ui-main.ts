@@ -9,6 +9,7 @@ module MathUI {
         (element: Element): MicroJQ;
         (element: Node): MicroJQ;
         (elements: Element[]): MicroJQ;
+        parseXML(data: string): XMLDocument;
     }
 
     var $: QueryStaticBase = microJQ;
@@ -25,19 +26,16 @@ module MathUI {
     }
 
     export class Handler {
-        canHandle(el: Element): boolean {
+        canHandle(el: HTMLElement): boolean {
             return false;  // disable auto-discover by default
         }
-        init(el: Element) {
+        init(el: HTMLElement) {
         }
-        clonePresentation(from: Element, to: Element) {
+        clonePresentation(from: HTMLElement, to: HTMLElement) {
             $(to).append($(from).contents().clone());
         }
-        getSources(el?: Element): Promise<SourceData[]> {
+        getSources(el?: HTMLElement): Promise<SourceData[]> {
             return Promise.resolve([]);
-        }
-        getSourceFor(type: string, el: Element, callback?: (value: any) => void): any {
-            return null;
         }
     }
 
@@ -121,8 +119,22 @@ module MathUI {
             this.element = this.documentHandler = undefined;
         }
         fitContentHeight() {
-            setTimeout(() => {   // IE8 seems to want this
-                this.dialog.css('height', this.wrapper.height() + 'px');
+            var promise = new Promise((resolve: (value: string) => void) => {
+                var checkHeight = (tries: number) => {
+                    var height = this.wrapper.height();
+                    if (height > 0)
+                        resolve(height + 'px');
+                    else if (tries === 0)
+                        resolve('100%');
+                    else
+                        setTimeout(() => {
+                            checkHeight(tries - 1);
+                        }, 50);
+                };
+                checkHeight(5);
+            });
+            promise.then((height: string) => {
+                this.dialog.css('height', height);
             });
         }
         click(event: MicroJQMouseEventObject) {
@@ -353,7 +365,7 @@ module MathUI {
         });
     }
 
-    microJQ.ready(function () {
+    microJQ.ready().then(function () {
         if ('jQuery' in window && jQuery.fn.on)
             $ = jQuery;
         $(document).find('.math-ui').each((k: number, element: Element) => {
@@ -371,46 +383,25 @@ module MathUI {
         return handlerStore.put(type, handler);
     }
 
-    var mathml_token_elements = ['mi', 'mn', 'mo', 'ms', 'mtext', 'ci', 'cn', 'cs', 'csymbol', 'annotation'];
+    export var prettifyMathML: (el: Element) => string = (function () {
+        var mathml_token_elements = ['mi', 'mn', 'mo', 'ms', 'mtext', 'ci', 'cn', 'cs', 'csymbol', 'annotation'];
 
-    export function prettifyMathML(el: HTMLElement, indent?: string): string {
-        if (el.nodeType !== 1)
-            throw 'prettifyMathMLNode: expected Element node';
-        if (indent === undefined) indent = '';
-        var name = el.nodeName.toLowerCase();
-        var r = indent + '<' + name + _.map(el.attributes, (attr: Attr) => ' ' + attr.name + '="' + attr.value + '"').join('') + '>';
-        if (_.contains(mathml_token_elements, name)) {
-            r += _.words(el.innerHTML).join(' ');
-        } else {
-            var children = _.filter($(el).contents().toArray(), (n: Element) => n.nodeType === 1);
-            var items = _.map(children, (c: HTMLElement) => prettifyMathML(<HTMLElement> c, indent + '  '));
-            if (items)
-                r += '\n' + items.join('\n') + '\n' + indent;
-        }
-        r += '</' + name + '>';
-        return r;
-    }
-
-    export function nodeToString(obj: any): string {
-        if ((<Node> obj).nodeType === 1 /*Node.ELEMENT_NODE*/) {
-            return (<HTMLElement> obj).outerHTML;
-        } else if ((<Node> obj).nodeType === 3 /*Node.TEXT_NODE*/) {
-            return (<Text> obj).nodeValue;
-        } else if ((<Node> obj).nodeType === 11 /*Node.DOCUMENT_FRAGMENT_NODE*/) {
-            return _.map((<DocumentFragment> obj).childNodes, nodeToString).join('');
-        }
-        throw 'Unsupported node type';
-    }
-
-    export function parseXML(st: string): Document {
-        if ('DOMParser' in window) {
-            var parser = new DOMParser();
-            try {
-                return parser.parseFromString(st, 'application/xml');
-            } catch (ex) {
+        function prettifyElement(el: Element, indent: string): string {
+            if (el.nodeType !== 1)
+                throw new Error('prettifyMathML: expected Element node');
+            var name = el.nodeName.toLowerCase(), inner = '';
+            if (_.contains(mathml_token_elements, name)) {
+                inner = _.words(_.map($(el).contents(), n => microJQ.serializeXML(n)).join('')).join(' ');
+            } else {
+                var items = _.map($(el).children(), c => prettifyElement(c, indent + '  '));
+                if (items)
+                    inner = '\n' + items.join('\n') + '\n' + indent;
             }
+            return indent + '<' + name + _.map(el.attributes, (attr: Attr) => ' ' + attr.name + '="' + attr.value + '"').join('') + '>'
+                + inner + '</' + name + '>';
         }
-        return null;
-    }
+
+        return (el: Element) => prettifyElement(el, '');
+    })();
 
 }
