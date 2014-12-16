@@ -67,7 +67,7 @@ module MathUI {
         (element: Node): MicroJQ;
         (elements: Element[]): MicroJQ;
         parseXML(data: string): XMLDocument;
-        serializeXML(n: Node): string;
+        //serializeXML(n: Node): string;
         ready: () => Promise<void>;
     }
 
@@ -447,16 +447,16 @@ module MathUI {
                 xmlDoc.loadXML(data);
                 return xmlDoc;
             } : () => {
-                throw new Error('parseXML not available');
+                throw new Error('parseXML not supported');
             };
  
         // http://stackoverflow.com/a/4916895/212069
-        microJQ.serializeXML = typeof XMLSerializer === 'function'
+        /*microJQ.serializeXML = typeof XMLSerializer === 'function'
             ? (n: Node) => (new XMLSerializer()).serializeToString(n)
             : (n: Node) => {
                 if (!('xml' in n)) throw new Error('serializeXML not supported');
                 return (<any> n).xml;
-            };
+            };*/
 
         return microJQ;
 

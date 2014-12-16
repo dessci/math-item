@@ -119,23 +119,13 @@ module MathUI {
             this.element = this.documentHandler = undefined;
         }
         fitContentHeight() {
-            var promise = new Promise((resolve: (value: string) => void) => {
-                var checkHeight = (tries: number) => {
-                    var height = this.wrapper.height();
-                    if (height > 0)
-                        resolve(height + 'px');
-                    else if (tries === 0)
-                        resolve('100%');
-                    else
-                        setTimeout(() => {
-                            checkHeight(tries - 1);
-                        }, 50);
-                };
-                checkHeight(5);
-            });
-            promise.then((height: string) => {
-                this.dialog.css('height', height);
-            });
+            var height = this.wrapper.height();
+            this.dialog.css('height', height + 'px');
+            if (height <= 0) {
+                async(() => {
+                    this.dialog.css('height', this.wrapper.height() + 'px');
+                });
+            }
         }
         click(event: MicroJQMouseEventObject) {
         }
@@ -386,19 +376,38 @@ module MathUI {
     export var prettifyMathML: (el: Element) => string = (function () {
         var mathml_token_elements = ['mi', 'mn', 'mo', 'ms', 'mtext', 'ci', 'cn', 'cs', 'csymbol', 'annotation'];
 
+        function tagToString(n: Node, inner: string, indent?: string) {
+            var name = n.nodeName.toLowerCase();
+            var ret = '<' + name + _.map(n.attributes, (attr: Attr) => ' ' + attr.name + '="' + attr.value + '"').join('');
+            if (indent) ret = indent + ret;
+            return inner ? ret + '>' + inner + '</' + name + '>' : ret + ' />';
+        }
+
+        function serializeInner(n: Node) {
+            return _.map($(n).contents(), c => serializeNode(c)).join('');
+        }
+
+        function serializeNode(n: Node) {
+            switch (n.nodeType) {
+                case 1: return tagToString(n, serializeInner(n));
+                case 3: return n.nodeValue;
+                case 8: return '<!--' + n.nodeValue + '-->';
+            }
+            return '';
+        }
+
         function prettifyElement(el: Element, indent: string): string {
             if (el.nodeType !== 1)
                 throw new Error('prettifyMathML: expected Element node');
             var name = el.nodeName.toLowerCase(), inner = '';
             if (_.contains(mathml_token_elements, name)) {
-                inner = _.words(_.map($(el).contents(), n => microJQ.serializeXML(n)).join('')).join(' ');
+                inner = _.words(serializeInner(el)).join(' ');
             } else {
                 var items = _.map($(el).children(), c => prettifyElement(c, indent + '  '));
                 if (items)
                     inner = '\n' + items.join('\n') + '\n' + indent;
             }
-            return indent + '<' + name + _.map(el.attributes, (attr: Attr) => ' ' + attr.name + '="' + attr.value + '"').join('') + '>'
-                + inner + '</' + name + '>';
+            return tagToString(el, inner, indent);
         }
 
         return (el: Element) => prettifyElement(el, '');

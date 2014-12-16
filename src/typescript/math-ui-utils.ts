@@ -140,7 +140,6 @@
         without: <T>(list: List<T>, elem: T) => filter(list, (item: T) => item !== elem),
         trim: trim,
         words: (st: string) => {
-            if (st == null) return [];
             st = trim(st);
             return st ? st.split(/\s+/) : [];
         },
@@ -187,5 +186,9 @@
             });
         }
     }
+
+    export var async: (fn: () => void) => void = typeof requestAnimationFrame === 'function'
+        ? (fn: () => void) => { requestAnimationFrame(fn); }
+        : (fn: () => void) => { setTimeout(fn, 0); }
 
 }

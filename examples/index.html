@@ -37,7 +37,7 @@
 
             <div class="math-ui">
                 <math display="block">
-                    <mfrac><mrow><mi>x</mi><mo>+</mo><mn>  1  + <malignmark></malignmark> 4 </mn></mrow><mi>y</mi></mfrac>
+                    <mfrac><mrow><mi>x</mi><mo>+<!--comment--></mo><mn>  1  + <malignmark></malignmark> 4 </mn></mrow><mi>y</mi></mfrac>
                 </math>
             </div>
 
@@ -352,7 +352,7 @@
     <script>
         (function () {
             var microJQ = MathUI.microJQ;
-            microJQ.ready(function () {
+            microJQ.ready().then(function () {
                 microJQ(document).find('#math-ui-dashboard-trigger').on('click', function (event) {
                     event.preventDefault();
                     event.stopPropagation();

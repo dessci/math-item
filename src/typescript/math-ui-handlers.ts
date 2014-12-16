@@ -34,12 +34,12 @@ module MathUI {
         }
         getSources(el: HTMLElement): Promise<SourceData[]> {
             var root = MathMLHandler.getMathRoot(el);
-            if (root !== null)
-                return Promise.resolve([
-                    { type: 'MathML', subtype: 'original', source: el.innerHTML },
-                    { type: 'MathML', subtype: 'prettified', source: prettifyMathML(root) }
-                ]);
-            return Promise.resolve([]);
+            if (root === null)
+                return Promise.resolve([]);
+            return Promise.resolve([
+                { type: 'MathML', subtype: 'original', source: el.innerHTML },
+                { type: 'MathML', subtype: 'prettified', source: prettifyMathML(root) }
+            ]);            
         }
     }
 
