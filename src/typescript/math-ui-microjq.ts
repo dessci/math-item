@@ -67,8 +67,7 @@ module MathUI {
         (element: Node): MicroJQ;
         (elements: Element[]): MicroJQ;
         parseXML(data: string): XMLDocument;
-        //serializeXML(n: Node): string;
-        ready: () => Promise<void>;
+        ready: () => IPromise<void>;
     }
 
     interface ElementEvents extends Dictionary<MicroJQEventHandler[]> { }

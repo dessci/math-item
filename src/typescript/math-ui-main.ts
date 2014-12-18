@@ -29,12 +29,13 @@ module MathUI {
         canHandle(el: HTMLElement): boolean {
             return false;  // disable auto-discover by default
         }
-        init(el: HTMLElement) {
+        init(el: HTMLElement): Promise<void> {
+            return null;
         }
         clonePresentation(from: HTMLElement, to: HTMLElement) {
             $(to).append($(from).contents().clone());
         }
-        getSources(el?: HTMLElement): Promise<SourceData[]> {
+        getSources(el?: HTMLElement): IPromise<SourceData[]> {
             return Promise.resolve([]);
         }
     }
@@ -231,15 +232,17 @@ module MathUI {
             this.id = 'math-ui-element-' + index;
             this.name = 'Equation ' + (index + 1);
             this.handler = handler;
-            this.handler.init(element);
-            el.attr('id', this.id).attr('tabindex', 0).on('focus', () => {
+            el.attr('id', this.id).attr('tabindex', 0).attr('role', 'math').on('focus', () => {
                 this.gotFocus();
             });
+        }
+        initHandler(): Promise<void> {
+            return this.handler.init(this.element);
         }
         clonePresentation(to: MicroJQ) {
             this.handler.clonePresentation(this.element, to[0]);
         }
-        getSources(): Promise<SourceData[]> {
+        getSources(): IPromise<SourceData[]> {
             return this.handler.getSources(this.element);
         }
         changeHighlight(on: boolean) {
@@ -347,32 +350,6 @@ module MathUI {
         }
     }
 
-    function elementReady(k: number, element: Element): void {
-        var id = 'math-ui-element-' + k;
-        var mathUIElement = mathUIElementDict[id] = new MathUIElement(<HTMLElement> element, k);
-        $(element).attr('id', id).attr('tabindex', 0).on('focus', () => {
-            mathUIElement.gotFocus();
-        });
-    }
-
-    microJQ.ready().then(function () {
-        if ('jQuery' in window && jQuery.fn.on)
-            $ = jQuery;
-        $(document).find('.math-ui').each((k: number, element: Element) => {
-            var mathUIElement = new MathUIElement(<HTMLElement> element, k);
-            mathUIElementDict[mathUIElement.id] = mathUIElement;
-        });
-    });
-
-    export function showDashboard(): void {
-        var dialog = new DashboardDialog();
-        dialog.show();
-    }
-
-    export function registerHandler(type: string, handler: Handler): Handler {
-        return handlerStore.put(type, handler);
-    }
-
     export var prettifyMathML: (el: Element) => string = (function () {
         var mathml_token_elements = ['mi', 'mn', 'mo', 'ms', 'mtext', 'ci', 'cn', 'cs', 'csymbol', 'annotation'];
 
@@ -412,5 +389,48 @@ module MathUI {
 
         return (el: Element) => prettifyElement(el, '');
     })();
+
+    function elementReady(k: number, element: Element): void {
+        var id = 'math-ui-element-' + k;
+        var mathUIElement = mathUIElementDict[id] = new MathUIElement(<HTMLElement> element, k);
+        $(element).attr('id', id).attr('tabindex', 0).on('focus', () => {
+            mathUIElement.gotFocus();
+        });
+    }
+
+    export function showDashboard(): void {
+        var dialog = new DashboardDialog();
+        dialog.show();
+    }
+
+    export function registerHandler(type: string, handler: Handler): Handler {
+        return handlerStore.put(type, handler);
+    }
+
+    var initDonePromise = makePromiseWithResolver<void>(),
+        renderingDonePromise = makePromiseWithResolver<void>();
+
+    export function initDone(): IPromise<void> {
+        return initDonePromise;
+    }
+    export function renderingDone(): IPromise<void> {
+        return renderingDonePromise;
+    }
+
+    microJQ.ready().then(function () {
+        var renderPromises: IPromise<void>[] = [];
+        if ('jQuery' in window && jQuery.fn.on)
+            $ = jQuery;
+        $(document).find('.math-ui').each((k: number, element: Element) => {
+            var mathUIElement = new MathUIElement(<HTMLElement> element, k),
+                p = mathUIElement.initHandler();
+            mathUIElementDict[mathUIElement.id] = mathUIElement;
+            if (p) renderPromises.push(p);
+        });
+        initDonePromise.resolve();
+        Promise.all(renderPromises).then(() => {
+            renderingDonePromise.resolve();
+        });
+    });
 
 }

@@ -156,7 +156,11 @@
         rejected: (reason: any) => void;
     }
 
-    export class Promise<T> {
+    export interface IPromise<T> {
+        then(resolved: (val?: T) => void, rejected?: (reason: any) => void): void;
+    }
+
+    export class Promise<T> implements IPromise<T> {
         private _thens: IThen<T>[] = [];
         constructor(callback: (resolve: (val?: T) => void, reject?: (reason: any) => void) => void) {
             var flush = () => {
@@ -180,11 +184,41 @@
         then(resolved: (val?: T) => void, rejected?: (reason: any) => void) {
             this._thens.push({ resolved: resolved, rejected: rejected });
         }
-        static resolve<T>(val?: T): Promise<T> {
+        static resolve<T>(val?: T): IPromise<T> {
             return new Promise((resolve: (val: T) => void) => {
                 resolve(val);
             });
         }
+        static all(promises: IPromise<any>[]): IPromise<any> {
+            return new Promise((resolve: (val: any) => void, reject: (reason: any) => void) => {
+                var results = [];
+                function check(k: number) {
+                    if (k < promises.length) {
+                        promises[k].then((val: any) => {
+                            results.push(val);
+                            check(k + 1);
+                        }, (reason: any) => {
+                            reject(reason);
+                        });
+                    } else
+                        resolve(results);
+                }
+                check(0);
+            });
+        }
+    }
+
+    export interface PromiseWithResolver<T> extends IPromise<T> {
+        resolve(): void;
+    }
+
+    export function makePromiseWithResolver<T>() {
+        var resolver,
+            p = <PromiseWithResolver<T>> <any> new Promise<T>((resolve: (val?: T) => void) => {
+                resolver = resolve;
+            });
+        p.resolve = resolver;
+        return p;
     }
 
     export var async: (fn: () => void) => void = typeof requestAnimationFrame === 'function'

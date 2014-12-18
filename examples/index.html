@@ -20,7 +20,10 @@
 </head>
 <body>
     <div id="wrapper">
+        <div id="progress" style="font-size: 80%;">started</div>
+
         <h1>Legacy Math UI</h1>
+        
         <div id="main">
 
             <h3>Plain HTML</h3>
@@ -351,9 +354,12 @@
     </div>
     <script>
         (function () {
-            var microJQ = MathUI.microJQ;
-            microJQ.ready().then(function () {
-                microJQ(document).find('#math-ui-dashboard-trigger').on('click', function (event) {
+            MathUI.microJQ.ready().then(function () {
+                var $ = MathUI.get$(), progress = $(document).find('#progress');
+                progress.append(' > loaded');
+                MathUI.initDone().then(function () { progress.append(' > wrapped'); });
+                MathUI.renderingDone().then(function () { progress.append(' > rendered'); });
+                $(document).find('#math-ui-dashboard-trigger').on('click', function (event) {
                     event.preventDefault();
                     event.stopPropagation();
                     MathUI.showDashboard();

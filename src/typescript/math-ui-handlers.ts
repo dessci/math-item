@@ -12,7 +12,7 @@ module MathUI {
         canHandle(el: HTMLElement): boolean {
             return true;  // act as a catch-all
         }
-        getSources(el: HTMLElement): Promise<SourceData[]> {
+        getSources(el: HTMLElement): IPromise<SourceData[]> {
             return Promise.resolve([{ type: 'HTML', source: el.innerHTML }]);
         }
     }
@@ -32,7 +32,7 @@ module MathUI {
         canHandle(el: HTMLElement): boolean {
             return MathMLHandler.getMathRoot(el) !== null;
         }
-        getSources(el: HTMLElement): Promise<SourceData[]> {
+        getSources(el: HTMLElement): IPromise<SourceData[]> {
             var root = MathMLHandler.getMathRoot(el);
             if (root === null)
                 return Promise.resolve([]);
@@ -66,7 +66,7 @@ module MathUI {
     }
 
     interface IHub {
-        Queue(fn: any[]);
+        Queue(fn: any[], ...fns: any[]);
         getAllJax(el: Element): Jax[];
     }
 
@@ -83,15 +83,17 @@ module MathUI {
         constructor(private original: string[], private internal: string[]) {
             super();
         }
-        init(el: HTMLElement): void {
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub, el]);
+        init(el: HTMLElement): Promise<void> {
+            var resolver, p = new Promise<void>(resolve => { resolver = resolve; });
+            MathJax.Hub.Queue(['Typeset', MathJax.Hub, el], resolver);
+            return p;
         }
         clonePresentation(from: HTMLElement, to: HTMLElement) {
             var script = $(from).find('script[type]');
             $(to).append(script.clone().removeAttr('id').removeAttr('MathJax'));
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, to]);
         }
-        getSources(el: HTMLElement): Promise<SourceData[]> {
+        getSources(el: HTMLElement): IPromise<SourceData[]> {
             var result: SourceData[] = [];
             var jaxs = MathJax.Hub.getAllJax(el);
             if (jaxs && jaxs.length === 1) {
@@ -130,10 +132,21 @@ module MathUI {
     var $ = get$();
 
     class EqnStoreHandler extends Handler {
+        /*init(el: HTMLElement): Promise<void> {
+            var imgs = $(el).find('img');
+            if (imgs.length === 1) {
+                var img = <HTMLImageElement> imgs[0];
+                if (!img.complete) {
+                    return new Promise<void>((resolve: () => void, reject: () => void) => {
+                        $(img).on('load', () => { resolve(); }).on('error', () => { reject(); });
+                    });
+                }
+            }
+        }*/
         clonePresentation(from: Element, to: Element) {
             $(to).append($(from).find('img').clone());
         }
-        getSources(el: HTMLElement): Promise<SourceData[]> {
+        getSources(el: HTMLElement): IPromise<SourceData[]> {
             var result: SourceData[] = [];
             var script = $(el).find('script[type="math/mml"]');
             if (script.length === 1) {

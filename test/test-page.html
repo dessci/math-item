@@ -1,0 +1,34 @@
+﻿<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mocha Tests</title>
+  <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
+  <script type="text/javascript" src="../node_modules/mocha/mocha.js"></script>
+  <script type="text/javascript" src="../node_modules/expect.js/index.js"></script>
+  <script type="text/javascript" src="../dist/math-ui-v0.1.js"></script>
+</head>
+<body>
+  <div id="mocha"></div>
+    
+    <div id="fixture">
+
+        <h3>Plain HTML</h3>
+
+        <p>A paragraph with <span class="math-ui">x<sup>2</sup></span> inline math.</p>
+
+        <div class="math-ui" style="font-size: 200%;">
+            x<sub>k</sub>
+        </div>
+
+    </div>
+
+  <script type="text/javascript">mocha.setup('bdd');</script>
+  <script type="text/javascript" src="test-page.js"></script>
+  <script type="text/javascript">
+      mocha.checkLeaks();
+      MathUI.initDone().then(function () {
+          mocha.run();
+      });
+  </script>
+</body>
+</html>
