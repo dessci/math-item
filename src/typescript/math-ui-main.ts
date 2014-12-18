@@ -215,8 +215,6 @@ module MathUI {
         static menuItems: MenuItem[] = [
             { label: 'Zoom', action: MathUIElement.prototype.zoomAction },
             { label: 'Source', action: MathUIElement.prototype.sourceAction },
-            { label: 'Search', action: () => { alert('search'); } },
-            { label: 'Share', action: () => { alert('share'); } },
             { label: 'Dashboard', action: showDashboard }
         ];
         public id: string;
@@ -225,8 +223,7 @@ module MathUI {
         constructor(public element: HTMLElement, index: number) {
             var el = $(element),
                 type: string = el.data('type'),
-                handler = handlerStore.get(type) ||
-                    handlerStore.find((handler: Handler) => handler.canHandle(element));
+                handler = handlerStore.get(type) || handlerStore.find((handler: Handler) => handler.canHandle(element));
             if (!handler)
                 throw 'MathUI: No matching handler';
             this.id = 'math-ui-element-' + index;
@@ -318,12 +315,14 @@ module MathUI {
         });
     }
 
+    function aboutMathUI() {
+        window.location.href = 'https://github.com/dessci/math-ui';
+    }
+
     class DashboardDialog extends Dialog {
         static dashboardItems: MenuItem[] = [
             { label: 'Highlight All Equations', action: highlightAllEquations },
-            { label: 'About MathUI', action: () => { alert('About MathUI'); } },
-            { label: 'Action 3', action: () => { alert('Action 3 not implemented'); } },
-            { label: 'Action 4', action: () => { alert('Action 4 not implemented'); } }
+            { label: 'About MathUI', action: () => { aboutMathUI(); } }
         ];
         private buttons: MicroJQ;
         show(): void {
@@ -428,7 +427,7 @@ module MathUI {
             if (p) renderPromises.push(p);
         });
         initDonePromise.resolve();
-        Promise.all(renderPromises).then(() => {
+        Promise.all(renderPromises).then((val: any[]) => {
             renderingDonePromise.resolve();
         });
     });

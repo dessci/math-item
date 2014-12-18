@@ -189,8 +189,8 @@
                 resolve(val);
             });
         }
-        static all(promises: IPromise<any>[]): IPromise<any> {
-            return new Promise((resolve: (val: any) => void, reject: (reason: any) => void) => {
+        static all(promises: IPromise<any>[]): IPromise<any[]> {
+            return new Promise((resolve: (val: any[]) => void, reject: (reason: any) => void) => {
                 var results = [];
                 function check(k: number) {
                     if (k < promises.length) {

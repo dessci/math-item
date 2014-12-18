@@ -34,7 +34,7 @@ module.exports = function(grunt) {
             },
             examples: {
                 files: {
-                    'examples/main.css': 'examples/main.scss'
+                    'examples/wrapping.css': 'examples/wrapping.scss'
                 }
             }
         },
