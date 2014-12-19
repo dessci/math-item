@@ -11,6 +11,7 @@ module MathUI {
         preventDefault(): any;
         stopPropagation(): void;
         which: number;
+        originalEvent: Event;
     }
 
     export interface MicroJQInputEventObject extends BaseMicroJQEventObject {
@@ -20,8 +21,6 @@ module MathUI {
     }
 
     export interface MicroJQKeyEventObject extends MicroJQInputEventObject {
-        keyCode: number;
-        shiftKey: boolean;
     }
 
     export interface MicroJQEventObject extends BaseMicroJQEventObject, MicroJQInputEventObject,
@@ -119,12 +118,21 @@ module MathUI {
                 (<MSEventAttachmentTarget> <any> el).detachEvent('on' + type, callback);
         }
 
+        var KEYBOARD_EVENTS = ['keydown', 'keyup', 'keypress'];
+        var MOUSE_EVENTS = ['mousedown', 'mouseup', 'click'];
+        var mouseButtonToWhich = [1, 1, 3, 0, 2];  // 0,1 -> 1, 4 -> 2, 2 -> 3
+
         var MicroJQEvent = (function () {
             function MicroJQEvent(event: Event) {
                 this.originalEvent = event;
                 this.type = event.type;
                 this.target = event.target || event.srcElement;
-                this.which = (<KeyboardEvent> event).which || (<KeyboardEvent> event).keyCode;
+                this.which = 0;
+                if (_.contains(KEYBOARD_EVENTS, event.type))
+                    this.which = (<KeyboardEvent> event).which || (<KeyboardEvent> event).keyCode;
+                else if (_.contains(MOUSE_EVENTS, event.type))
+                    this.which = (<MouseEvent> event).which !== undefined ? (<MouseEvent> event).which
+                        : mouseButtonToWhich[(<MouseEvent> event).button];
             }
             MicroJQEvent.prototype.preventDefault = Event.prototype.preventDefault
                 ? function () { this.originalEvent.preventDefault(); }

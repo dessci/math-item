@@ -101,7 +101,7 @@ module MathUI {
                 ? $(create('div')).addClass('math-ui-backdrop').append(this.dialog) : this.dialog;
             prepareDialog(this.wrapper);
             this.documentHandler = (event: MicroJQEventObject) => {
-                if (event.type === 'click' || event.which === 27) {
+                if (event.type === 'click' ? event.which === 1 : event.which === 27) {
                     stopEvent(event);
                     this.close();
                 } else if (event.type === 'keydown')
@@ -110,8 +110,10 @@ module MathUI {
             $(parent).append(this.element);
             $(document).on('click keydown', this.documentHandler);
             this.dialog.on('click', (event: MicroJQEventObject) => {
-                stopEvent(event);
-                this.click(event);
+                if (event.which === 1) {
+                    stopEvent(event);
+                    this.click(event);
+                }
             });
         }
         close() {
@@ -123,6 +125,7 @@ module MathUI {
             var height = this.wrapper.height();
             this.dialog.css('height', height + 'px');
             if (height <= 0) {
+                // setting height twice + async seems to make it work on IE9
                 async(() => {
                     this.dialog.css('height', this.wrapper.height() + 'px');
                 });
@@ -260,7 +263,7 @@ module MathUI {
                 triggerSelected = () => {
                     el.blur();
                     // IE8: Make sure focus menu is removed before triggering action
-                    setTimeout(() => {
+                    async(() => {
                         MathUIElement.menuItems[selectedIndex].action.call(this);
                     });
                 },
@@ -297,9 +300,11 @@ module MathUI {
                 };
             buttons.each(function (k: number, btn: Element) {
                 $(btn).append(MathUIElement.menuItems[k].label).on('mousedown', (event: MicroJQEventObject) => {
-                    stopEvent(event);
-                    updateSelected(k);
-                    triggerSelected();
+                    if (event.which === 1) {
+                        stopEvent(event);
+                        updateSelected(k);
+                        triggerSelected();
+                    }
                 });
             });
             el.append(menu).on('keydown', onkeydown).on('blur', onblur);
