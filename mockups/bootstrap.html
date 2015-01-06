@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>MathUI Bootstrap Mockup</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            margin: 1em;
+        }
+        #wrapper {
+            width: 50em;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .modal-body > .nav-pills {
+            padding-bottom: 15px;
+        }
+        .modal-body > textarea.form-control {
+            height: 20em;
+            cursor: text;
+            background-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div id="wrapper">
+        <h1>MathUI Bootstrap Mockup</h1>
+
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">
+          View Markup
+        </button>
+
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">View Equation Markup</h4>
+              </div>
+              <div class="modal-body">
+                  <ul class="nav nav-pills">
+                      <li role="presentation" class="active"><a href="#">TeX</a></li>
+                      <li role="presentation"><a href="#">MathML</a></li>
+                      <li role="presentation"><a href="#">HTML</a></li>
+                  </ul>
+                  <textarea class="form-control" readonly></textarea>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="selectall">Select All</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function () {
+            var $modal = $('#myModal'), $lis = $modal.find('li'),
+                markups = ['\\sum_{k=1}^n k^2', '<math>\n  <mi>x</mi>\n</math>', 'x<sup>2</sup>'];
+            function setText(idx) {
+                $lis.removeClass('active');
+                $modal.find('textarea').val(markups[idx]);
+                $($lis[idx]).addClass('active');
+            }
+            $modal.on('shown.bs.modal', function () { setText(0); });
+            $lis.each(function (k, el) {
+                $(el).on('click', function (ev) {
+                    setText(k);
+                    ev.preventDefault();
+                });
+            });
+            $('#selectall').on('click', function () {
+                $modal.find('textarea').focus()[0].select();
+            });
+        });
+    </script>
+</body>
+</html>
