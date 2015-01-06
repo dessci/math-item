@@ -198,12 +198,19 @@ var MathUI;
             else
                 el.detachEvent('on' + type, callback);
         }
+        var KEYBOARD_EVENTS = ['keydown', 'keyup', 'keypress'];
+        var MOUSE_EVENTS = ['mousedown', 'mouseup', 'click'];
+        var mouseButtonToWhich = [1, 1, 3, 0, 2]; // 0,1 -> 1, 4 -> 2, 2 -> 3
         var MicroJQEvent = (function () {
             function MicroJQEvent(event) {
                 this.originalEvent = event;
                 this.type = event.type;
                 this.target = event.target || event.srcElement;
-                this.which = event.which || event.keyCode;
+                this.which = 0;
+                if (_.contains(KEYBOARD_EVENTS, event.type))
+                    this.which = event.which || event.keyCode;
+                else if (_.contains(MOUSE_EVENTS, event.type))
+                    this.which = event.which !== undefined ? event.which : mouseButtonToWhich[event.button];
             }
             MicroJQEvent.prototype.preventDefault = Event.prototype.preventDefault ? function () {
                 this.originalEvent.preventDefault();
@@ -575,15 +582,25 @@ var MathUI;
     var Dialog = (function () {
         function Dialog() {
         }
-        Dialog.prototype.show = function (className, prepareDialog, parent) {
+        Dialog.prototype.show = function (className, prepareDialog, buttons, parent) {
             var _this = this;
             parent = parent || document.body;
             this.wrapper = $(create('div')).addClass('math-ui-wrapper');
             this.dialog = $(create('div')).addClass(className).append(this.wrapper);
             this.element = parent === document.body ? $(create('div')).addClass('math-ui-backdrop').append(this.dialog) : this.dialog;
             prepareDialog(this.wrapper);
+            if (buttons) {
+                var bottom = $(create('div')).addClass('math-ui-footer');
+                _.each(buttons, function (buttonData) {
+                    var button = $(create('button')).append(buttonData.label).on('click', function () {
+                        buttonData.action();
+                    });
+                    bottom.append(button);
+                });
+                this.wrapper.append(bottom);
+            }
             this.documentHandler = function (event) {
-                if (event.type === 'click' || event.which === 27) {
+                if (event.type === 'click' ? event.which === 1 : event.which === 27) {
                     stopEvent(event);
                     _this.close();
                 }
@@ -593,8 +610,10 @@ var MathUI;
             $(parent).append(this.element);
             $(document).on('click keydown', this.documentHandler);
             this.dialog.on('click', function (event) {
-                stopEvent(event);
-                _this.click(event);
+                if (event.which === 1) {
+                    stopEvent(event);
+                    _this.click(event);
+                }
             });
         };
         Dialog.prototype.close = function () {
@@ -607,6 +626,7 @@ var MathUI;
             var height = this.wrapper.height();
             this.dialog.css('height', height + 'px');
             if (height <= 0) {
+                // setting height twice + async seems to make it work on IE9
                 MathUI.async(function () {
                     _this.dialog.css('height', _this.wrapper.height() + 'px');
                 });
@@ -628,7 +648,7 @@ var MathUI;
             var _this = this;
             _super.prototype.show.call(this, 'math-ui-zoom', function (container) {
                 _this.host.clonePresentation(container);
-            }, this.host.element);
+            }, undefined, this.host.element);
         };
         ZoomDialog.prototype.click = function () {
             this.close();
@@ -655,43 +675,74 @@ var MathUI;
         SourceDialog.prototype.updateSelected = function () {
             if (this.selected === undefined)
                 return;
-            this.$source.text(this.sources[this.selected].source);
+            this.sourceArea.text(this.sources[this.selected].source);
         };
         SourceDialog.prototype.setSelected = function (k) {
             if (this.sources.length === 0)
                 return;
             k = (k + this.sources.length) % this.sources.length;
             if (k !== this.selected) {
+                var children = this.sourceTabContainer.children();
                 this.selected = k;
-                this.updateSelected();
-                this.sourceTabs.removeClass('math-ui-selected');
-                $(this.sourceTabs[k]).addClass('math-ui-selected');
+                children.removeClass('math-ui-selected');
+                $(children[k]).addClass('math-ui-selected');
                 this.updateSelected();
             }
         };
         SourceDialog.prototype.show = function () {
             var _this = this;
-            _super.prototype.show.call(this, 'math-ui-dialog math-ui-source', function (container) {
-                _this.sourceTabs = $(_.map(_this.sources, function (item) { return $(create('span')).append(sourceDataToLabel(item))[0]; }));
-                _this.$source = $(create('pre'));
-                container.append($(create('div')).addClass('math-ui-header').append('Source for ' + _this.host.name), $(create('div')).addClass('math-ui-content').append($(create('div')).addClass('sourcetypes').append(_this.sourceTabs), _this.$source));
-                _this.setSelected(0);
+            var selectAll = function () {
+                _this.sourceArea.focus()[0].select();
+            };
+            var buttons = [
+                { label: 'Select All', action: selectAll },
+                { label: 'Close', action: function () {
+                    _this.close();
+                } }
+            ];
+            /*if (typeof ClipboardEvent !== 'undefined' && new ClipboardEvent('copy') instanceof Event) {
+                buttons.splice(0, 0, {
+                    label: 'Copy to Clipboard', action: () => {
+                        var e = new ClipboardEvent('copy', { bubbles: true, cancelable: true, dataType: 'text/plain', data: 'Copy test' });
+                        this.sourceArea[0].dispatchEvent(e);
+                    }
+                });
+            }*/
+            this.sourceArea = $(create('textarea')).attr('readonly', 'readonly');
+            this.sourceTabContainer = $(create('div')).addClass('math-ui-types').attr('tabindex', 0);
+            _.each(this.sources, function (item) {
+                _this.sourceTabContainer.append($(create('span')).append(sourceDataToLabel(item)));
             });
+            _super.prototype.show.call(this, 'math-ui-dialog math-ui-source', function (container) {
+                container.append($(create('div')).addClass('math-ui-header').append('Markup for ' + _this.host.name), $(create('div')).addClass('math-ui-content').append(_this.sourceTabContainer, _this.sourceArea));
+            }, buttons);
+            this.setSelected(0);
             this.fitContentHeight();
+            this.sourceTabContainer.focus();
+            this.sourceArea.on('copy', function (ev) {
+                console.log('copy', ev);
+                ev.originalEvent.clipboardData.setData("text/plain", "Simulated copy. Yay!");
+                ev.originalEvent.clipboardData.setData("application/mathml+xml", "<math><mi>x</mi></math>");
+                ev.preventDefault();
+            });
         };
         SourceDialog.prototype.close = function () {
-            this.sources = this.sourceTabs = this.$source = undefined;
+            this.sources = this.sourceTabContainer = this.sourceArea = undefined;
             _super.prototype.close.call(this);
         };
         SourceDialog.prototype.click = function (event) {
-            var k = _.indexOf(this.sourceTabs.toArray(), event.target);
-            if (k >= 0)
-                this.setSelected(k);
+            var _this = this;
+            this.sourceTabContainer.children().each(function (k, elem) {
+                if (elem === event.target)
+                    _this.setSelected(k);
+            });
         };
         SourceDialog.prototype.keydown = function (event) {
-            var k = _.indexOf([37, 39], event.which);
-            if (k >= 0)
-                this.setSelected(this.selected + (k === 0 ? 1 : -1));
+            if (event.target === this.sourceTabContainer[0]) {
+                var k = _.indexOf([37, 39], event.which);
+                if (k >= 0)
+                    this.setSelected(this.selected + (k === 0 ? 1 : -1));
+            }
         };
         return SourceDialog;
     })(Dialog);
@@ -736,7 +787,7 @@ var MathUI;
             var selectedIndex, triggerSelected = function () {
                 el.blur();
                 // IE8: Make sure focus menu is removed before triggering action
-                setTimeout(function () {
+                MathUI.async(function () {
                     MathUIElement.menuItems[selectedIndex].action.call(_this);
                 });
             }, buttons = $(_.map(MathUIElement.menuItems, function () { return create('span'); })).addClass('math-ui-item'), menu = $(create('div')).addClass('math-ui-eqn-menu').append($(create('span')).addClass('math-ui-header').append(this.name), $(create('span')).addClass('math-ui-container').append(buttons)), updateSelected = function (index) {
@@ -765,9 +816,11 @@ var MathUI;
             };
             buttons.each(function (k, btn) {
                 $(btn).append(MathUIElement.menuItems[k].label).on('mousedown', function (event) {
-                    stopEvent(event);
-                    updateSelected(k);
-                    triggerSelected();
+                    if (event.which === 1) {
+                        stopEvent(event);
+                        updateSelected(k);
+                        triggerSelected();
+                    }
                 });
             });
             el.append(menu).on('keydown', onkeydown).on('blur', onblur);
@@ -776,7 +829,7 @@ var MathUI;
         };
         MathUIElement.menuItems = [
             { label: 'Zoom', action: MathUIElement.prototype.zoomAction },
-            { label: 'Source', action: MathUIElement.prototype.sourceAction },
+            { label: 'View Markup', action: MathUIElement.prototype.sourceAction },
             { label: 'Dashboard', action: showDashboard }
         ];
         return MathUIElement;
@@ -898,7 +951,6 @@ var MathUI;
         });
         initDonePromise.resolve();
         MathUI.Promise.all(renderPromises).then(function (val) {
-            console.log(val.length);
             renderingDonePromise.resolve();
         });
     });
