@@ -2,6 +2,8 @@
 /// <reference path="math-ui-utils.ts" />
 /// <reference path="../../typings/jquery.d.ts" />
 
+declare var ClipboardEvent: any;
+
 module MathUI {
     'use strict';
 
@@ -93,13 +95,23 @@ module MathUI {
         private element: MicroJQ;
         private dialog: MicroJQ;
         private wrapper: MicroJQ;
-        show(className: string, prepareDialog: (container: MicroJQ) => void, parent?: Element) {
+        show(className: string, prepareDialog: (container: MicroJQ) => void, buttons?: MenuItem[], parent?: Element) {
             parent = parent || document.body;
             this.wrapper = $(create('div')).addClass('math-ui-wrapper');
             this.dialog = $(create('div')).addClass(className).append(this.wrapper);
             this.element = parent === document.body
                 ? $(create('div')).addClass('math-ui-backdrop').append(this.dialog) : this.dialog;
             prepareDialog(this.wrapper);
+            if (buttons) {
+                var bottom = $(create('div')).addClass('math-ui-footer');
+                _.each(buttons, (buttonData: MenuItem) => {
+                    var button = $(create('button')).append(buttonData.label).on('click', () => {
+                        buttonData.action();
+                    });
+                    bottom.append(button);
+                });
+                this.wrapper.append(bottom);
+            }
             this.documentHandler = (event: MicroJQEventObject) => {
                 if (event.type === 'click' ? event.which === 1 : event.which === 27) {
                     stopEvent(event);
@@ -144,7 +156,7 @@ module MathUI {
         show(): void {
             super.show('math-ui-zoom', (container: MicroJQ) => {
                 this.host.clonePresentation(container);
-            }, this.host.element);
+            }, undefined, this.host.element);
         }
         click() {
             this.close();
@@ -159,8 +171,8 @@ module MathUI {
 
     class SourceDialog extends Dialog {
         private sources: SourceData[];
-        private sourceTabs: MicroJQ;
-        private $source: MicroJQ;
+        private sourceTabContainer: MicroJQ;
+        private sourceArea: MicroJQ;
         private selected: number;
         constructor(private host: MathUIElement) {
             super();
@@ -171,53 +183,78 @@ module MathUI {
         }
         updateSelected() {
             if (this.selected === undefined) return;
-            this.$source.text(this.sources[this.selected].source);
+            this.sourceArea.text(this.sources[this.selected].source);
         }
         setSelected(k: number) {
             if (this.sources.length === 0) return;
             k = (k + this.sources.length) % this.sources.length;
             if (k !== this.selected) {
+                var children = this.sourceTabContainer.children();
                 this.selected = k;
-                this.updateSelected();
-                this.sourceTabs.removeClass('math-ui-selected');
-                $(this.sourceTabs[k]).addClass('math-ui-selected');
+                children.removeClass('math-ui-selected');
+                $(children[k]).addClass('math-ui-selected');
                 this.updateSelected();
             }
         }
         show() {
-            super.show('math-ui-dialog math-ui-source', (container: MicroJQ) => {
-                this.sourceTabs = $(_.map(this.sources, (item: SourceData) =>
-                    $(create('span')).append(sourceDataToLabel(item))[0]));
-                this.$source = $(create('pre'));
-                container.append(
-                    $(create('div')).addClass('math-ui-header').append('Source for ' + this.host.name),
-                    $(create('div')).addClass('math-ui-content').append(
-                        $(create('div')).addClass('sourcetypes').append(this.sourceTabs),
-                        this.$source
-                        )
-                    );
-                this.setSelected(0);
+            var selectAll = () => {
+                (<HTMLTextAreaElement> this.sourceArea.focus()[0]).select();
+            };
+            var buttons = [
+                { label: 'Select All', action: selectAll },
+                { label: 'Close', action: () => { this.close(); } }
+            ];
+            /*if (typeof ClipboardEvent !== 'undefined' && new ClipboardEvent('copy') instanceof Event) {
+                buttons.splice(0, 0, {
+                    label: 'Copy to Clipboard', action: () => {
+                        var e = new ClipboardEvent('copy', { bubbles: true, cancelable: true, dataType: 'text/plain', data: 'Copy test' });
+                        this.sourceArea[0].dispatchEvent(e);
+                    }
+                });
+            }*/
+            this.sourceArea = $(create('textarea')).attr('readonly', 'readonly');
+            this.sourceTabContainer = $(create('div')).addClass('math-ui-types').attr('tabindex', 0);
+            _.each(this.sources, (item: SourceData) => {
+                this.sourceTabContainer.append($(create('span')).append(sourceDataToLabel(item)));
             });
+            super.show('math-ui-dialog math-ui-source', (container: MicroJQ) => {
+                container.append(
+                    $(create('div')).addClass('math-ui-header').append('Markup for ' + this.host.name),
+                    $(create('div')).addClass('math-ui-content').append(this.sourceTabContainer, this.sourceArea)
+                );
+            }, buttons);
+            this.setSelected(0);
             this.fitContentHeight();
+            this.sourceTabContainer.focus();
+            this.sourceArea.on('copy', (ev: MicroJQEventObject) => {
+                console.log('copy', ev);
+                (<any> ev.originalEvent).clipboardData.setData("text/plain", "Simulated copy. Yay!");
+                (<any> ev.originalEvent).clipboardData.setData("application/mathml+xml", "<math><mi>x</mi></math>");
+                ev.preventDefault();
+            });
         }
         close() {
-            this.sources = this.sourceTabs = this.$source = undefined;
+            this.sources = this.sourceTabContainer = this.sourceArea = undefined;
             super.close();
         }
         click(event: MicroJQMouseEventObject) {
-            var k = _.indexOf(this.sourceTabs.toArray(), event.target);
-            if (k >= 0) this.setSelected(k);
+            this.sourceTabContainer.children().each((k: number, elem: Element) => {
+                if (elem === event.target)
+                    this.setSelected(k);
+            });
         }
         keydown(event: MicroJQKeyEventObject) {
-            var k = _.indexOf([37, 39], event.which);
-            if (k >= 0) this.setSelected(this.selected + (k === 0 ? 1 : -1));
+            if (event.target === this.sourceTabContainer[0]) {
+                var k = _.indexOf([37, 39], event.which);
+                if (k >= 0) this.setSelected(this.selected + (k === 0 ? 1 : -1));
+            }
         }
     }
 
     class MathUIElement {
         static menuItems: MenuItem[] = [
             { label: 'Zoom', action: MathUIElement.prototype.zoomAction },
-            { label: 'Source', action: MathUIElement.prototype.sourceAction },
+            { label: 'View Markup', action: MathUIElement.prototype.sourceAction },
             { label: 'Dashboard', action: showDashboard }
         ];
         public id: string;

@@ -1,4 +1,22 @@
-﻿.math-ui {
+﻿$item-focus-border: #4f9fcf;
+$dialog-background: #d6e3e7;
+$item-menu-action-hover-background: lighten($dialog-background, 5%);
+$dialog-header-background: #4f7dc9;
+$dialog-focus-bar-background: #333;
+$item-hover-border: lighten($item-focus-border, 20%);
+
+@mixin clearfix {
+    &:before,
+    &:after {
+        content: " ";
+        display: table;
+    }
+    &:after {
+        clear: both;
+    }
+}
+
+.math-ui {
     position: relative;
     border: 3px solid transparent;
     padding: 1px;
@@ -7,11 +25,11 @@
     cursor: pointer;
    
     &:hover, &.highlight {
-        border: 3px solid #afbfff;
+        border: 3px solid $item-hover-border;
     }
 
     &:focus {
-        border: 3px solid #4f9fcf;
+        border: 3px solid $item-focus-border;
     }
 
     & > div.math-ui-eqn-menu {
@@ -24,7 +42,7 @@
         z-index: 1;
 
         & > span.math-ui-header {
-            background-color: #4f7dc9;
+            background-color: $dialog-header-background;
             color: white;
             padding: 0.5em;
         }
@@ -36,17 +54,17 @@
 
             & > span.math-ui-item {
                 display: inline-block;
-                background-color: #d6e3e7;
-                padding: 0.5em 0;
-                width: 6em;
+                background-color: $dialog-background;
+                padding: 0.5em;
+                min-width: 6em;
                 text-align: center;
 
                 &.math-ui-selected {
                     font-weight: bold;
                 }
-        
+
                 &:hover {
-                    background-color: #eaf1f3;
+                    background-color: $item-menu-action-hover-background;
                 }
             }
 
@@ -85,7 +103,7 @@ div.math-ui-backdrop {
 
 div.math-ui-dialog {
     position: absolute;
-    background-color: #d6e3e7;
+    background-color: $dialog-background;
     padding: 0;
     font-family: sans-serif;
     font-size: 1rem;
@@ -97,9 +115,10 @@ div.math-ui-dialog {
         padding: 0;
         margin: 0;
         border: 1px solid white;
+        @include clearfix;
     }
     .math-ui-header {
-        background-color: #4f7dc9;
+        background-color: $dialog-header-background;
         color: #fff;
         height: 3em;
         line-height: 3em;
@@ -111,13 +130,7 @@ div.math-ui-dialog {
         padding: 0;
         margin: 0;
     }
-
-}
-
-div.math-ui-dialog.math-ui-dashboard {
-    width: 20em;
-
-    .math-ui-content button {
+    button {
         background-color: transparent;
         color: #333;
         -webkit-box-sizing: border-box;
@@ -127,18 +140,31 @@ div.math-ui-dialog.math-ui-dashboard {
         outline: none;
         padding: 0.5em 1em;
         margin: 0;
+        font: inherit;
         font-size: 1em;
-        text-align: left;
-        width: 100%;
-        display: block;
-
         &:hover {
             background-color: #eaf1f3;
         }
-
         &:focus {
             font-weight: bold;
         }
+    }
+    .math-ui-footer {
+        float: right;
+        button {
+            color: #000;
+        }
+    }
+
+}
+
+div.math-ui-dialog.math-ui-dashboard {
+    width: 20em;
+
+    .math-ui-content button {
+        text-align: left;
+        width: 100%;
+        display: block;
     }
 }
 
@@ -148,30 +174,42 @@ div.math-ui-dialog.math-ui-source {
         color: #000;
         padding: 0;
     }
-    .sourcetypes {
+    .math-ui-types {
         font-size: 80%;
+        border-left: 0.2em solid transparent;
+        span {
+            display: inline-block;
+            background-color: #d6e3e7;
+            padding: 0.5em 0;
+            width: 6em;
+            text-align: center;
+            &.math-ui-selected {
+                font-weight: bold;
+            }
+            &:hover {
+                background-color: #eaf1f3;
+                cursor: pointer;
+            }
+        }
+        &:focus {
+            outline: none;
+            border-left: 0.2em solid $dialog-focus-bar-background;
+        }
     }
-    .sourcetypes span {
-        display: inline-block;
-        background-color: #d6e3e7;
-        padding: 0.5em 0;
-        width: 6em;
-        text-align: center;
-    }
-    .sourcetypes span.math-ui-selected {
-        font-weight: bold;
-    }
-    .sourcetypes span:hover {
-        background-color: #eaf1f3;
-        cursor: pointer;
-    }
-    pre {
+    textarea {
         width: 100%;
         height: 20em;
-        margin: 0;
-        padding: 0 0 0 1em;
+        padding: 0 0 0 0.3em;
+        border: none;
+        border-left: 0.2em solid transparent;
         box-sizing: border-box;
         overflow: scroll;
+        background-color: inherit;
+        font-size: 1em;
+        &:focus {
+            outline: none;
+            border-left: 0.2em solid $dialog-focus-bar-background;
+        }
     }
 }
 
