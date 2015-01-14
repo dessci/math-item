@@ -209,7 +209,7 @@
     }
 
     export interface PromiseWithResolver<T> extends IPromise<T> {
-        resolve(): void;
+        resolve(val?: T): void;
     }
 
     export function makePromiseWithResolver<T>() {

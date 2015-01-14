@@ -354,15 +354,15 @@
     </div>
     <script>
         (function () {
-            MathUI.microJQ.ready().then(function () {
-                var $ = MathUI.get$(), progress = $(document).find('#progress');
+            MathUI.queryLibReady(function ($) {
+                var progress = $(document).find('#progress');
                 progress.append(' > loaded');
                 MathUI.initDone().then(function () { progress.append(' > wrapped'); });
                 MathUI.renderingDone().then(function () { progress.append(' > rendered'); });
                 $(document).find('#math-ui-dashboard-trigger').on('click', function (event) {
                     event.preventDefault();
                     event.stopPropagation();
-                    MathUI.showDashboard();
+                    MathUI.container.showDashboard();
                 });
             });
         })();

@@ -1,12 +1,12 @@
-﻿/// <reference path="math-ui-main.ts" />
+﻿/// <reference path="math-ui-core.ts" />
 
 // Built-in extensions
 
 module MathUI {
     'use strict';
 
-    var $ = get$();
-    var _ = getUtils();
+    var $: QueryStaticBase = microJQ, _ = getUtils();
+    queryLibReady(qlib => $ = qlib);
 
     class PlainHandler extends Handler {
         canHandle(el: HTMLElement): boolean {
@@ -77,7 +77,8 @@ module MathUI {
 
     declare var MathJax: IMathJax;
 
-    var $ = get$();
+    var $: QueryStaticBase = microJQ;
+    queryLibReady(qlib => $ = qlib);
 
     class MathJaxHandler extends Handler {
         constructor(private original: string[], private internal: string[]) {
@@ -129,7 +130,8 @@ module MathUI {
 module MathUI {
     'use strict';
 
-    var $ = get$();
+    var $: QueryStaticBase = microJQ;
+    queryLibReady(qlib => $ = qlib);
 
     class EqnStoreHandler extends Handler {
         /*init(el: HTMLElement): Promise<void> {
@@ -169,4 +171,3 @@ module MathUI {
 
     MathUI.registerHandler('eqnstore', new EqnStoreHandler());
 }
- 
