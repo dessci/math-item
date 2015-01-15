@@ -356,17 +356,18 @@
     <script>
         (function () {
             MathUI.queryLibReady(function ($) {
-                var progress = $(document).find('#progress'), promises;
+                var progress = $(document).find('#progress'), promises,
+                    container = new MathUI.VanillaLookAndFeel();
 
                 progress.append(' > loaded');
-                promises = MathUI.start(new MathUI.VanillaLookAndFeel());
+                promises = MathUI.start(container);
                 promises.wrap.then(function () { progress.append(' > wrapped'); });
                 promises.render.then(function () { progress.append(' > rendered'); });
 
                 $(document).find('#math-ui-dashboard-trigger').on('click', function (event) {
                     event.preventDefault();
                     event.stopPropagation();
-                    MathUI.container.showDashboard();
+                    container.showDashboard();
                 });
             });
         })();

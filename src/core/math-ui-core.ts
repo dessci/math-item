@@ -101,10 +101,6 @@ module MathUI {
         getSources(): IPromise<SourceData[]> {
             return this.handler.getSources(this.element);
         }
-        changeHighlight(on: boolean) {
-            var el = $(this.element);
-            on ? el.addClass('highlight') : el.removeClass('highlight');
-        }
     }
 
     export var prettifyMathML: (el: Element) => string = (function () {
@@ -175,7 +171,8 @@ module MathUI {
         highlightAll() {
             var on = this.highlighted = !this.highlighted;
             _.each(this.itemDict, (mathItem: MathItem) => {
-                mathItem.changeHighlight(on);
+                var el = $(mathItem.element);
+                on ? el.addClass('highlight') : el.removeClass('highlight');
             });
         }
         init(mathItem: MathItem) {
