@@ -4,8 +4,6 @@
 
 // declare var ClipboardEvent: any;
 
-// core
-
 module MathUI {
     'use strict';
 
@@ -18,6 +16,8 @@ module MathUI {
 
     var $: QueryStaticBase = microJQ;
     var _ = getUtils();
+
+    export var getQueryLib = () => $;
 
     export interface SourceData {
         type: string;
@@ -86,7 +86,7 @@ module MathUI {
                 type: string = el.data('type'),
                 handler = handlerStore.get(type) || handlerStore.find((handler: Handler) => handler.canHandle(element));
             if (!handler)
-                throw 'MathUI: No matching handler';
+                throw Error('MathUI: No matching handler');
             this.id = 'math-ui-element-' + index;
             this.name = 'Equation ' + (index + 1);
             this.handler = handler;
@@ -185,14 +185,12 @@ module MathUI {
     }
 
     var queryLibReadyQueue: {(qlib: QueryStaticBase): void}[] = [];
-    var startedPromise = makePromiseWithResolver<QueryStaticBase>();
-
     export function queryLibReady(callback: (qlib: QueryStaticBase) => void) {
         if (queryLibReadyQueue === undefined) callback($);
         queryLibReadyQueue.push(callback);
     }
 
-    export var started = () => startedPromise;
+    var qlibNotifyDone = makePromiseWithResolver<void>();
 
     microJQ.ready().then(function () {
         if ('jQuery' in window && jQuery.fn.on) $ = jQuery;
@@ -200,7 +198,23 @@ module MathUI {
             callback($);
         });
         queryLibReadyQueue = undefined;
-        startedPromise.resolve($);
+        qlibNotifyDone.resolve();
     });
+
+    export function start(container: MathItemContainer): { wrap: IPromise<void>; render: IPromise<void> } {
+        var result = {
+            wrap: makePromiseWithResolver<void>(),
+            render: makePromiseWithResolver<void>()
+        };
+        // first wait until handlers etc. have the queryLib variable
+        qlibNotifyDone.then(() => {
+            var elements = $(document).find('.math-ui').toArray();
+            container.add(elements).then(() => {
+                result.render.resolve();
+            });
+            result.wrap.resolve();
+        });
+        return result;
+    }
 
 }

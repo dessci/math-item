@@ -7,9 +7,10 @@
     <title>Legacy Math UI</title>
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
     <link rel="stylesheet" href="wrapping.css" />
-    <link rel="stylesheet" href="../dist/math-ui-v0.1.css" />
+    <link rel="stylesheet" href="../dist/math-ui-vanilla.css" />
     <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>-->
-    <script src="../dist/math-ui-v0.1.js"></script>
+    <script src="../dist/math-ui-core.js"></script>
+    <script src="../dist/math-ui-vanilla.js"></script>
     <script type="text/x-mathjax-config">
         MathJax.Hub.Config({
             skipStartupTypeset: true,
@@ -355,10 +356,13 @@
     <script>
         (function () {
             MathUI.queryLibReady(function ($) {
-                var progress = $(document).find('#progress');
+                var progress = $(document).find('#progress'), promises;
+
                 progress.append(' > loaded');
-                MathUI.initDone().then(function () { progress.append(' > wrapped'); });
-                MathUI.renderingDone().then(function () { progress.append(' > rendered'); });
+                promises = MathUI.start(new MathUI.VanillaLookAndFeel());
+                promises.wrap.then(function () { progress.append(' > wrapped'); });
+                promises.render.then(function () { progress.append(' > rendered'); });
+
                 $(document).find('#math-ui-dashboard-trigger').on('click', function (event) {
                     event.preventDefault();
                     event.stopPropagation();

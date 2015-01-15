@@ -1,6 +1,6 @@
 /// <reference path="../typings/mocha.d.ts" />
 /// <reference path="../typings/expect.js.d.ts" />
-/// <reference path="../dist/math-ui-v0.1.d.ts" />
+/// <reference path="../dist/math-ui-core.d.ts" />
 
 var _ = MathUI.getUtils();
 

@@ -5,7 +5,9 @@
   <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
   <script type="text/javascript" src="../node_modules/mocha/mocha.js"></script>
   <script type="text/javascript" src="../node_modules/expect.js/index.js"></script>
-  <script type="text/javascript" src="../dist/math-ui-v0.1.js"></script>
+  <script type="text/javascript" src="../dist/math-ui-core.js"></script>
+  <script type="text/javascript" src="../dist/math-ui-vanilla.js"></script>
+  <link rel="stylesheet" href="../dist/math-ui-vanilla.css" />
 </head>
 <body>
   <div id="mocha"></div>
@@ -22,13 +24,10 @@
 
     </div>
 
-  <script type="text/javascript">mocha.setup('bdd');</script>
-  <script type="text/javascript" src="test-page.js"></script>
   <script type="text/javascript">
+      mocha.setup('bdd');
       mocha.checkLeaks();
-      MathUI.initDone().then(function () {
-          mocha.run();
-      });
   </script>
+  <script type="text/javascript" src="test-page.js"></script>
 </body>
 </html>

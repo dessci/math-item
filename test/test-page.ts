@@ -1,8 +1,11 @@
 /// <reference path="../typings/mocha.d.ts" />
 /// <reference path="../typings/expect.js.d.ts" />
-/// <reference path="../dist/math-ui-v0.1.d.ts" />
+/// <reference path="../dist/math-ui-core.d.ts" />
+/// <reference path="../dist/math-ui-vanilla.d.ts" />
 
-MathUI.queryLibReady($ => {
+MathUI.start(new MathUI.VanillaLookAndFeel()).wrap.then(() => {
+
+    var $ = MathUI.getQueryLib();
 
     describe('MathUI test page', function () {
 
@@ -29,5 +32,7 @@ MathUI.queryLibReady($ => {
         });
 
     });
+
+    mocha.run();
 
 });

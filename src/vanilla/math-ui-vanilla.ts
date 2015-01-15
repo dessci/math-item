@@ -1,5 +1,4 @@
-﻿/// <reference path="math-ui-microjq.ts" />
-/// <reference path="math-ui-core.ts" />
+﻿/// <reference path="../../dist/math-ui-core.d.ts" />
 
 module MathUI {
     'use strict';

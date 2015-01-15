@@ -3,9 +3,18 @@ module.exports = function(grunt) {
     
     grunt.initConfig({
         typescript: {
-            dist: {
-                src: ['src/typescript/*.ts'],
-                dest: 'dist/' + name + '.js',
+            core: {
+                src: ['src/core/*.ts'],
+                dest: 'dist/math-ui-core.js',
+                options: {
+                    target: 'es3',
+                    sourceMap: true,
+                    declaration: true
+                }
+            },
+            vanilla: {
+                src: ['src/vanilla/*.ts'],
+                dest: 'dist/math-ui-vanilla.js',
                 options: {
                     target: 'es3',
                     sourceMap: true,
@@ -20,16 +29,16 @@ module.exports = function(grunt) {
                 }
             }
         },
-        uglify: {
+        /*uglify: {
             dist: {
                 src: ['dist/' + name + '.js'],
                 dest: 'dist/' + name + '.min.js'
             }
-        },
+        },*/
         sass: {
-            dist: {
+            vanilla: {
                 files: {
-                    'dist/math-ui-v0.1.css': 'src/sass/math-ui.scss'
+                    'dist/math-ui-vanilla.css': 'src/vanilla/math-ui-vanilla.scss'
                 }
             },
             examples: {
@@ -47,13 +56,17 @@ module.exports = function(grunt) {
             }
         },
         watch: {
-            srcJs: {
-                files: ['src/typescript/*.ts'],
-                tasks: ['typescript:dist']
+            jsCore: {
+                files: ['src/core/*.ts'],
+                tasks: ['typescript:core']
             },
-            srcCss: {
+            jsVanilla: {
+                files: ['src/vanilla/*.ts'],
+                tasks: ['typescript:vanilla']
+            },
+            cssVanilla: {
                 files: ['src/sass/*.scss'],
-                tasks: ['sass:dist']
+                tasks: ['sass:vanilla']
             },
             examples: {
                 files: ['examples/*.scss'],
@@ -78,7 +91,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-clean');
 
-    grunt.registerTask('default', ['clean', 'typescript', 'sass', 'uglify']);
+    grunt.registerTask('default', ['clean', 'typescript', 'sass'/*, 'uglify'*/]);
     grunt.registerTask('serve', ['connect', 'watch']);
 
 };
