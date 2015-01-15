@@ -21,6 +21,15 @@ module.exports = function(grunt) {
                     declaration: true
                 }
             },
+            bootstrap: {
+                src: ['src/bootstrap/*.ts'],
+                dest: 'dist/math-ui-bootstrap.js',
+                options: {
+                    target: 'es3',
+                    sourceMap: true,
+                    declaration: true
+                }
+            },
             tests: {
                 src: ['test/*.ts'],
                 dest: '.',
@@ -39,6 +48,11 @@ module.exports = function(grunt) {
             vanilla: {
                 files: {
                     'dist/math-ui-vanilla.css': 'src/vanilla/math-ui-vanilla.scss'
+                }
+            },
+            bootstrap: {
+                files: {
+                    'dist/math-ui-bootstrap.css': 'src/bootstrap/math-ui-bootstrap.scss'
                 }
             },
             examples: {
@@ -64,9 +78,17 @@ module.exports = function(grunt) {
                 files: ['src/vanilla/*.ts'],
                 tasks: ['typescript:vanilla']
             },
+            jsBootstrap: {
+                files: ['src/bootstrap/*.ts'],
+                tasks: ['typescript:bootstrap']
+            },
             cssVanilla: {
-                files: ['src/sass/*.scss'],
+                files: ['src/vanilla/*.scss'],
                 tasks: ['sass:vanilla']
+            },
+            cssBootstrap: {
+                files: ['src/bootstrap/*.scss'],
+                tasks: ['sass:bootstrap']
             },
             examples: {
                 files: ['examples/*.scss'],

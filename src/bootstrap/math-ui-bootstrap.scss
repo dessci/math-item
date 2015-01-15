@@ -1,0 +1,28 @@
+﻿$item-focus-border: #4f9fcf;
+$item-hover-border: lighten($item-focus-border, 20%);
+
+.math-ui {
+    position: relative;
+    border: 3px solid transparent;
+    padding: 1px;
+    margin: -4px;  /* -(border-width + padding) */
+    outline: none;
+    cursor: pointer;
+   
+    &:hover, &.highlight {
+        border: 3px solid $item-hover-border;
+    }
+
+    &:focus {
+        border: 3px solid $item-focus-border;
+    }
+}
+
+span.math-ui {
+    display: inline-block;
+}
+
+div.math-ui {
+    display: block;
+    text-align: center;
+}
