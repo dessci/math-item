@@ -4,9 +4,6 @@
 module MathUI {
     'use strict';
 
-    var $: QueryStaticBase, _ = getUtils();
-    queryLibReady(qlib => $ = qlib);
-
     var initDonePromise = makePromiseWithResolver<void>(),
         renderingDonePromise = makePromiseWithResolver<void>();
 
@@ -20,7 +17,7 @@ module MathUI {
 
     export var container = new VanillaLookAndFeel();
 
-    started().then(() => {
+    started().then(($) => {
         var elements = $(document).find('.math-ui').toArray();
         container.add(elements).then(() => {
             renderingDonePromise.resolve();

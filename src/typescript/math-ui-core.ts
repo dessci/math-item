@@ -185,16 +185,14 @@ module MathUI {
     }
 
     var queryLibReadyQueue: {(qlib: QueryStaticBase): void}[] = [];
-    var startedPromise = makePromiseWithResolver<void>();
+    var startedPromise = makePromiseWithResolver<QueryStaticBase>();
 
     export function queryLibReady(callback: (qlib: QueryStaticBase) => void) {
         if (queryLibReadyQueue === undefined) callback($);
         queryLibReadyQueue.push(callback);
     }
 
-    export function started(): IPromise<void> {
-        return startedPromise;
-    }
+    export var started = () => startedPromise;
 
     microJQ.ready().then(function () {
         if ('jQuery' in window && jQuery.fn.on) $ = jQuery;
@@ -202,7 +200,7 @@ module MathUI {
             callback($);
         });
         queryLibReadyQueue = undefined;
-        startedPromise.resolve();
+        startedPromise.resolve($);
     });
 
 }
