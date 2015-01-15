@@ -26,3 +26,19 @@ div.math-ui {
     display: block;
     text-align: center;
 }
+
+.math-ui > .dropdown-menu {
+    display: block;
+    .dropdown-header {
+        color: #337ab7;
+        font-size: inherit;
+    }
+}
+
+.math-ui-zoom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 200%;
+    z-index: 1;
+}
