@@ -42,3 +42,16 @@ div.math-ui {
     font-size: 200%;
     z-index: 1;
 }
+
+.math-ui-dashboard .btn-group-vertical {
+    width: 100%;
+}
+
+.modal-body > .nav-pills {
+    padding-bottom: 15px;
+}
+.modal-body > textarea.form-control {
+    height: 20em;
+    cursor: text;
+    background-color: transparent;
+}
