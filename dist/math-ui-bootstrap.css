@@ -1,0 +1,43 @@
+.math-ui {
+  position: relative;
+  border: 3px solid transparent;
+  padding: 1px;
+  margin: -4px;
+  /* -(border-width + padding) */
+  outline: none;
+  cursor: pointer; }
+  .math-ui:hover, .math-ui.highlight {
+    border: 3px solid #9fcbe5; }
+  .math-ui:focus {
+    border: 3px solid #4f9fcf; }
+
+span.math-ui {
+  display: inline-block; }
+
+div.math-ui {
+  display: block;
+  text-align: center; }
+
+.math-ui > .dropdown-menu {
+  display: block; }
+  .math-ui > .dropdown-menu .dropdown-header {
+    color: #337ab7;
+    font-size: inherit; }
+
+.math-ui-zoom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 200%;
+  z-index: 1; }
+
+.math-ui-dashboard .btn-group-vertical {
+  width: 100%; }
+
+.modal-body > .nav-pills {
+  padding-bottom: 15px; }
+
+.modal-body > textarea.form-control {
+  height: 20em;
+  cursor: text;
+  background-color: transparent; }
