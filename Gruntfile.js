@@ -22,6 +22,10 @@ module.exports = function(grunt) {
             webcomponents: {
                 src: 'node_modules/webcomponents.js/CustomElements.js',
                 dest: 'dist/CustomElements.js'
+            },
+            es6promise: {
+                src: 'src/promise-polyfill.js',
+                dest: 'dist/promise-polyfill.js'
             }
         },
         connect: {
@@ -40,6 +44,10 @@ module.exports = function(grunt) {
             examples: {
                 files: ['examples/*.scss'],
                 tasks: ['sass:examples']
+            },
+            es6promise: {
+                files: 'src/promise-polyfill.js',
+                tasks: ['copy:es6promise']
             }
         },
         clean: {
