@@ -4,7 +4,7 @@ module.exports = function(grunt) {
     grunt.initConfig({
         typescript: {
             'math-item': {
-                src: ['src/math-item.ts'],
+                src: ['src/math-item.ts', 'src/handlers.ts'],
                 dest: 'dist/math-item.js',
                 target: 'es3',
                 sourceMap: true,
@@ -21,7 +21,14 @@ module.exports = function(grunt) {
         copy: {
             webcomponents: {
                 src: 'node_modules/webcomponents.js/CustomElements.js',
-                dest: 'dist/CustomElements.js'
+                dest: 'dist/CustomElements.js',
+                options: {
+                    process: function (content) {
+                        return 'if (Date.now && Object.defineProperty && Array.prototype.forEach && Array.prototype.indexOf && window.addEventListener) {\n' +
+                            content.replace(/\.(import|instanceof|extends)\b/g, "['$1']") +
+                            '}\n';
+                    }
+                }
             },
             es6promise: {
                 src: 'src/promise-polyfill.js',
@@ -38,7 +45,7 @@ module.exports = function(grunt) {
         },
         watch: {
             'math-item': {
-                files: 'src/math-item.ts',
+                files: ['src/*-utils.ts', 'src/handlers.ts', 'src/math-item.ts'],
                 tasks: ['typescript:math-item']
             },
             examples: {

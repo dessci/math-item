@@ -18,12 +18,12 @@
     </script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <style>
-        math-item {
+        p > math-item, math-item[display="inline"], span.math-item {
+            display: inline;
+        }
+        div > math-item, math-item[display="block"], div.math-item {
             display: block;
             text-align: center;
-        }
-        math-item[display="inline"] {
-            display: inline;   
         }
     </style>
 </head>
@@ -37,9 +37,10 @@
 
             <h3>Plain HTML</h3>
 
-            <p>A paragraph with <math-item>x<sup>2</sup></math-item> inline math.</p>
+            <p>A paragraph with <math-item>x<sup>2</sup></math-item> inline math.
+            And a <span class="math-item">y<sub>3</sub></span> span.</p>
 
-            <math-item style="font-size: 200%;">
+            <math-item style="font-size: 200%;" display="inline">
                 x<sub>k</sub>
             </math-item>
 
@@ -55,7 +56,8 @@
 
             <h3>TeX + MathJax</h3>
 
-            <p>A paragraph with <math-item handler="tex">\(\sin(x)\)</math-item> inline math.</p>
+            <p>A paragraph with <math-item handler="tex">\(\sin(x)\)</math-item> inline math.
+            And a <span class="math-item" handler="tex">\(\cos(y)\)</span> span.</p>
 
             <math-item handler="tex">
                 \[J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\bigl({\frac{x}{2}}\bigr)}^{2 m + \alpha}\]
@@ -112,7 +114,7 @@
 
             <p>
                 A paragraph with <math-item handler="eqnstore">
-                    <img src="http://mathwiz.cloudapp.net/677f87b8abc33a364dd9776669b31b604547df3d/png/64" style="width: 4.77em; vertical-align: -0.12em;">
+                    <img src="../media/img-eqn-inline.png" style="width: 4.77em; vertical-align: -0.12em;">
                     <script type="application/mathml+xml">
                         <math>
                             <mrow>
@@ -131,7 +133,7 @@
             </p>
 
             <math-item handler="eqnstore">
-                <img src="http://mathwiz.cloudapp.net/bf585ace6f7655d8dfe64546ebda20cf991bb59c/png/64" style="width: 22.98em; vertical-align: -2.27em;">
+                <img src="../media/img-eqn-block.png" style="width: 22.98em; vertical-align: -2.27em;">
                 <script type="application/mathml+xml">
                     <math display="block">
                         <mrow>
@@ -363,6 +365,11 @@
     </div>
     <script>
         (function () {
+            FlorianMath._utils.dom.ready().then(function () {
+                var items = document.querySelectorAll('.math-item');
+                for (var k = 0; k < items.length; k++)
+                    FlorianMath.makeMathItem(items[k]);
+            });
             /*MathUI.queryLibReady(function ($) {
                 var progress = $(document).find('#progress'), promises,
                     container = new MathUI.VanillaLookAndFeel();

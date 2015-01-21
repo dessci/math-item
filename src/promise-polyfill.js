@@ -1,5 +1,25 @@
 var FlorianMath;
-(function (FlorianMath, window, global) {
+FlorianMath = FlorianMath || {};
+
+FlorianMath.Promise = (function (local) {
+    return (
+        "Promise" in local &&
+            // Some of these methods are missing from
+            // Firefox/Chrome experimental implementations
+            "resolve" in local.Promise &&
+            "reject" in local.Promise &&
+            "all" in local.Promise &&
+            "race" in local.Promise &&
+            // Older version of the spec had a resolver object
+            // as the arg rather than a function
+            (function () {
+        var resolve;
+        new local.Promise(function (r) { resolve = r; });
+        return typeof resolve === 'function';
+    }))
+})(window) ? window.Promise : 
+
+(function (window, undefined) {
     "use strict";
 
     function $$utils$$objectOrFunction(x) {
@@ -905,24 +925,6 @@ var FlorianMath;
         }
     };
 
-    function es6PromiseSupport(local) {
-        return (
-        "Promise" in local &&
-            // Some of these methods are missing from
-            // Firefox/Chrome experimental implementations
-            "resolve" in local.Promise &&
-            "reject" in local.Promise &&
-            "all" in local.Promise &&
-            "race" in local.Promise &&
-            // Older version of the spec had a resolver object
-            // as the arg rather than a function
-            (function () {
-                var resolve;
-                new local.Promise(function (r) { resolve = r; });
-                return $$utils$$isFunction(resolve);
-            }()));
-    }
+    return $$es6$promise$promise$$default;
 
-    FlorianMath.Promise = es6PromiseSupport(window) ? window.Promise : $$es6$promise$promise$$default;
-
-})(FlorianMath || (FlorianMath = {}), window);
+})(window);
