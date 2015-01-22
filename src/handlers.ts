@@ -16,8 +16,8 @@ module FlorianMath {
         canHandle(el: HTMLElement): boolean {
             return true;  // act as a catch-all
         }
-        initialize(el: HTMLMathItemElement) {
-            super.initialize(el);
+        ready(el: HTMLMathItemElement) {
+            super.ready(el);
             el.getMarkup = () => plainMarkup(el);
             (<PromiseWithResolve<void>> el.rendered()).resolve();
         }
@@ -47,10 +47,10 @@ module FlorianMath {
         canHandle(el: HTMLElement): boolean {
             return MathMLHandler.getMathRoot(el) !== null;
         }
-        initialize(el: HTMLMathItemElement) {
+        ready(el: HTMLMathItemElement) {
+            super.ready(el);
             var root = MathMLHandler.getMathRoot(el);
-            super.initialize(el);
-
+            el.getMarkup = () => getMathMLMarkup(el, root);
             if (!el.hasAttribute('display')) {
                 var value = root.getAttribute('display') || root.getAttribute('mode');
                 if (value)
@@ -141,11 +141,11 @@ module FlorianMath {
         getMarkup(el: HTMLElement) {
             return mathjaxMarkup(el, this.original, this.internal);
         }
-        initialize(el: HTMLMathItemElement) {
+        ready(el: HTMLMathItemElement) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, el], () => {
                 (<PromiseWithResolve<void>> el.rendered()).resolve();
             });
-            el.cloneRepresentation = (dest: HTMLElement) => mathjaxClone(el, dest);
+            el.clonePresentation = (dest: HTMLElement) => mathjaxClone(el, dest);
             el.getMarkup = () => this.getMarkup(el);
         }
     }
@@ -188,8 +188,8 @@ module FlorianMath {
     }
 
     class EqnStoreHandler extends Handler {
-        initialize(el: HTMLMathItemElement) {
-            el.cloneRepresentation = (dest: HTMLElement) => cloner(el, dest);
+        ready(el: HTMLMathItemElement) {
+            el.clonePresentation = (dest: HTMLElement) => cloner(el, dest);
             el.getMarkup = () => markup(el);
             (<PromiseWithResolve<void>> el.rendered()).resolve();
         }

@@ -17,18 +17,19 @@ module FlorianMath {
     export interface HTMLMathItemElement extends HTMLElement {
         rendered(): Promise<void>;
         getMarkup?(): Promise<MarkupData[]>;
-        cloneRepresentation? (dest: HTMLElement): Promise<void>;
+        clonePresentation?(dest: HTMLElement): Promise<void>;
     }
 
     interface PrivateMathItemElement extends HTMLMathItemElement {
+        _id: number;
         _handler: Handler;
     }
 
     var _ = _utils.common, dom = _utils.dom;
 
     export class Handler {
-        initialize(el: HTMLMathItemElement) {
-            el.cloneRepresentation = function (dest: HTMLElement) {
+        ready(el: HTMLMathItemElement) {
+            el.clonePresentation = function (dest: HTMLElement) {
                 _.each(dom.getNodeChildren(this), (child: Node) => {
                     dest.appendChild(child.cloneNode(true));
                 });
@@ -75,31 +76,51 @@ module FlorianMath {
         return handlerStore.put(type, handler);
     }
 
+    // Default container
+
+    export var container: HTMLMathItemElement[] = [];
+
     // MathItem callbacks
 
-    function mathItemCreated(mathItem: HTMLMathItemElement) {
+    function mathItemAttached(mathItem: HTMLMathItemElement) {
         var rendered = _utils.makePromiseWithResolve<void>();
         mathItem.setAttribute('role', 'math');
+        (<PrivateMathItemElement> mathItem)._id = container.length;
+        container.push(mathItem);
         (<PrivateMathItemElement> mathItem)._handler = handlerStore.get(mathItem.getAttribute('handler'))
             || handlerStore.find((h: Handler) => h.canHandle(mathItem));
         mathItem.rendered = () => rendered;
+        dom.async(() => {
+            mathItemDOMReady(mathItem);
+        });
     }
 
-    function mathItemReady(mathItem: HTMLMathItemElement) {
-        (<PrivateMathItemElement> mathItem)._handler.initialize(mathItem);
+    function mathItemDOMReady(mathItem: HTMLMathItemElement) {
+        (<PrivateMathItemElement> mathItem)._handler.ready(mathItem);
     }
 
-    export function makeMathItem(el: HTMLElement) {
-        mathItemCreated(<HTMLMathItemElement> el);
-        mathItemReady(<HTMLMathItemElement> el);
+    function mathItemDetached(mathItem: HTMLMathItemElement) {
+        var index = (<PrivateMathItemElement> mathItem)._id;
+        delete container[index];
+    }
+
+    export function addMathItem(el: HTMLElement) {
+        mathItemAttached(<HTMLMathItemElement> el);
+    }
+
+    export function removeMathItem(el: HTMLElement) {
+        mathItemDetached(<HTMLMathItemElement> el);
     }
 
     if (document.registerElement) {
         var proto = Object.create(HTMLElement.prototype);
 
-        proto.createdCallback = function () {
-            mathItemCreated(this);
-            dom.async(() => { mathItemReady(this); });
+        proto.attachedCallback = function () {
+            mathItemAttached(this);
+        };
+
+        proto.detachedCallback = function () {
+            mathItemDetached(this);
         };
 
         document.registerElement('math-item', {
@@ -111,9 +132,11 @@ module FlorianMath {
         dom.ready().then(() => {
             var items = document.querySelectorAll('math-item');
             _.each(items, (item: Node) => {
-                makeMathItem(<HTMLElement> item);
+                addMathItem(<HTMLElement> item);
             });
         });
     }
+
+    export var lookAndFeel;
 
 }

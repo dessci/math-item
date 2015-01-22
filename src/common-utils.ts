@@ -1,8 +1,9 @@
 declare module FlorianMath {
     class Promise<T> {
         constructor(callback: (resolve: (val?: T) => void, reject?: (reason: any) => void) => void);
-        then(resolved: (val?: T) => void, rejected?: (reason: any) => void): void;
+        then(resolved: (val?: T) => void, rejected?: (reason: any) => void): Promise<any>;
         static resolve<T>(val?: T): Promise<T>;
+        static reject(reason?: any): Promise<void>;
         static all(promises: Promise<any>[]): Promise<any[]>;
     }
 }

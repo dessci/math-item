@@ -4,17 +4,26 @@ module.exports = function(grunt) {
     grunt.initConfig({
         typescript: {
             'math-item': {
-                src: ['src/math-item.ts', 'src/handlers.ts'],
+                src: ['src/math-item.ts', 'src/handlers.ts', 'src/loader.ts'],
                 dest: 'dist/math-item.js',
-                target: 'es3',
-                sourceMap: true,
-                declaration: true
+                options: {
+                    target: 'es3',
+                    sourceMap: true,
+                    declaration: true
+                }
+            },
+            bootstrap: {
+                src: ['src/bootstrap/*.ts'],
+                dest: 'dist/math-ui-bootstrap.js',
+                options: {
+                    target: 'es3'
+                }
             }
         },
         sass: {
-            examples: {
+            bootstrap: {
                 files: {
-                    'examples/wrapping.css': 'examples/wrapping.scss'
+                    'dist/math-ui-bootstrap.css': 'src/bootstrap/math-ui-bootstrap.scss'
                 }
             }
         },
@@ -45,7 +54,7 @@ module.exports = function(grunt) {
         },
         watch: {
             'math-item': {
-                files: ['src/*-utils.ts', 'src/handlers.ts', 'src/math-item.ts'],
+                files: ['src/*-utils.ts', 'src/handlers.ts', 'src/loader.ts', 'src/math-item.ts'],
                 tasks: ['typescript:math-item']
             },
             examples: {
@@ -55,6 +64,14 @@ module.exports = function(grunt) {
             es6promise: {
                 files: 'src/promise-polyfill.js',
                 tasks: ['copy:es6promise']
+            },
+            jsBootstrap: {
+                files: ['src/bootstrap/*.ts'],
+                tasks: ['typescript:bootstrap']
+            },
+            cssBootstrap: {
+                files: ['src/bootstrap/*.scss'],
+                tasks: ['sass:bootstrap']
             }
         },
         clean: {
