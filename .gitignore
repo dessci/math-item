@@ -8,3 +8,4 @@ math-ui.njsproj
 math-ui.v12.suo
 math-ui.sln
 obj/
+*.log
