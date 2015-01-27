@@ -1,47 +1,41 @@
 module.exports = function(grunt) {
-    var name = 'math-ui-v0.1';
-    
+
     grunt.initConfig({
-        /*typescript: {
-            core: {
-                src: ['src/core/*.ts'],
-                dest: 'dist/math-ui-core.js',
+        clean: {
+            dist: ['dist'],
+            temps: ['src/math-item.js*', 'src/handlers.js*']
+        },
+        concat: {
+            math_item: {
+                src: ['src/promise-polyfill.js', 'dist/math-item.js'],
+                dest: 'dist/math-item-element.js'
+            }
+        },
+        typescript: {
+            math_item: {
+                src: ['src/math-item.ts', 'src/handlers.ts'],
+                dest: 'dist/math-item.js',
                 options: {
                     target: 'es3',
                     sourceMap: true,
                     declaration: true
                 }
-            }
+            },
         },
-        sass: {
-            bootstrap: {
+        uglify: {
+            math_item: {
                 files: {
-                    'dist/math-ui-bootstrap.css': 'src/bootstrap/math-ui-bootstrap.scss'
+                    'dist/math-item-element.min.js': ['dist/math-item-element.js']
                 }
             }
-        },*/
-        connect: {
-            root: {
-                options: {
-                    port: 8080,
-                    base: './'
-                }
-            }
-        },
-        /*watch: {
-        },*/
-        clean: {
-            dist: ['dist']
         }
     });
  
     grunt.loadNpmTasks('grunt-typescript');
-    grunt.loadNpmTasks('grunt-contrib-sass');
-    grunt.loadNpmTasks('grunt-contrib-connect');
-    grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
 
-    grunt.registerTask('default', ['clean'/*, 'typescript', 'sass'*/]);
-    grunt.registerTask('serve', ['connect'/*, 'watch'*/]);
+    grunt.registerTask('default', ['clean', 'typescript', 'concat', 'uglify']);
 
 };

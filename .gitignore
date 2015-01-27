@@ -4,8 +4,9 @@ dist/
 examples/*.css
 test/*.js
 .ntvs_analysis.dat
-math-ui.njsproj
-math-ui.v12.suo
-math-ui.sln
+*.njsproj
+*.suo
+*.sln
 obj/
 *.log
+*.js.map
