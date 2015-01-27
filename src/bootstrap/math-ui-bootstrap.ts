@@ -5,7 +5,7 @@ interface JQuery {
     modal(options?: any): void;
 }
 
-module MathUI {
+module FlorianMath {
     'use strict';
 
     var _ = getUtils();

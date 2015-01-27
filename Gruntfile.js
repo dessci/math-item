@@ -54,11 +54,6 @@ module.exports = function(grunt) {
                 files: {
                     'dist/math-ui-bootstrap.css': 'src/bootstrap/math-ui-bootstrap.scss'
                 }
-            },
-            examples: {
-                files: {
-                    'examples/wrapping.css': 'examples/wrapping.scss'
-                }
             }
         },
         connect: {
