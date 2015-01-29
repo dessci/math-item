@@ -1,4 +1,5 @@
 /// <reference path="common-utils.ts" />
+/// <reference path="dom-utils.ts" />
 
 module FlorianMath {
     'use strict';

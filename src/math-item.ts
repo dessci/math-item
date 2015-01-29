@@ -1,3 +1,4 @@
+/// <reference path="promise.ts" />
 /// <reference path="common-utils.ts" />
 /// <reference path="dom-utils.ts" />
 /// <reference path="xml-utils.ts" />
@@ -7,6 +8,7 @@ interface Document {
 }
 
 module FlorianMath {
+    'use strict';
 
     export interface MarkupData {
         type: string;
@@ -15,9 +17,9 @@ module FlorianMath {
     }
 
     export interface HTMLMathItemElement extends HTMLElement {
-        rendered(): Promise<void>;
-        getMarkup?(): Promise<MarkupData[]>;
-        clonePresentation?(dest: HTMLElement): Promise<void>;
+        rendered(): IPromise<void>;
+        getMarkup?(): IPromise<MarkupData[]>;
+        clonePresentation?(dest: HTMLElement): IPromise<void>;
     }
 
     interface PrivateMathItemElement extends HTMLMathItemElement {

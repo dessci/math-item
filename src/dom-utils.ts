@@ -6,7 +6,7 @@ module FlorianMath {
     export interface IUtils {
         dom: {
             addEventListenerFn(el: EventTarget, type: string, callback: (event?: Event) => void): void;
-            ready(): Promise<void>;
+            ready(): IPromise<void>;
             async(fn: () => void): void;
             getNodeChildren(n: Node, filter?: (n: Node) => boolean): Node[];
             getElementChildren(n: Node): Element[];

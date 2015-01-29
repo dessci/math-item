@@ -1,14 +1,37 @@
-var FlorianMath;
-(function (FlorianMath) {
-    FlorianMath.Promise = (function (local) {
-        return ("Promise" in local && "resolve" in local.Promise && "reject" in local.Promise && "all" in local.Promise && "race" in local.Promise && (function () {
-            var resolve;
-            new local.Promise(function (r) {
-                resolve = r;
-            });
-            return typeof resolve === 'function';
-        }));
-    })(window) ? window.Promise : (function (window, undefined) {
+interface Window {
+    Promise: FlorianMath.PromiseStatic;
+}
+
+declare var Uint8ClampedArray: any;
+declare var process: any;
+
+module FlorianMath {
+    'use strict';
+
+    export interface PromiseStatic {
+        new <T>(callback: (resolve: (val?: T) => void, reject?: (reason: any) => void) => void): IPromise<T>;
+        resolve<T>(val?: T): IPromise<T>;
+        reject(reason?: any): IPromise<void>;
+        all(promises: IPromise<any>[]): IPromise<any[]>;
+    }
+
+    export interface IPromise<T> {
+        then(resolved: (val?: T) => void, rejected?: (reason: any) => void): IPromise<any>;
+    }
+
+    export var Promise: PromiseStatic = (function (local) {
+        return ("Promise" in local &&
+                "resolve" in local.Promise &&
+                "reject" in local.Promise &&
+                "all" in local.Promise &&
+                "race" in local.Promise && (function () {
+                    var resolve;
+                    new local.Promise(function (r) {
+                        resolve = r;
+                    });
+                    return typeof resolve === 'function';
+                }));
+    })(window) ? window.Promise : <any> (function (window) {
         "use strict";
         function $$utils$$objectOrFunction(x) {
             return typeof x === 'function' || (typeof x === 'object' && x !== null);
@@ -72,7 +95,7 @@ var FlorianMath;
             var node = document.createTextNode('');
             observer.observe(node, { characterData: true });
             return function () {
-                node.data = (iterations = ++iterations % 2);
+                (<any> node).data = (iterations = ++iterations % 2);
             };
         }
         // web worker
@@ -134,7 +157,7 @@ var FlorianMath;
                 return $$$internal$$GET_THEN_ERROR;
             }
         }
-        function $$$internal$$tryThen(then, value, fulfillmentHandler, rejectionHandler) {
+        function $$$internal$$tryThen(then, value, fulfillmentHandler, rejectionHandler, msg) {
             try {
                 then.call(value, fulfillmentHandler, rejectionHandler);
             }
@@ -332,7 +355,7 @@ var FlorianMath;
                 $$$internal$$reject(promise, e);
             }
         }
-        function $$$enumerator$$makeSettledResult(state, position, value) {
+        function $$$enumerator$$makeSettledResult(state, position, value): any {
             if (state === $$$internal$$FULFILLED) {
                 return {
                     state: 'fulfilled',
@@ -481,7 +504,7 @@ var FlorianMath;
         /**
           Promise objects represent the eventual result of an asynchronous operation. The
           primary way of interacting with a promise is through its `then` method, which
-          registers callbacks to receive either a promise�s eventual value or the reason
+          registers callbacks to receive either a promise?s eventual value or the reason
           why the promise cannot be fulfilled.
     
           Terminology
@@ -596,11 +619,11 @@ var FlorianMath;
                 $$$internal$$initializePromise(this, resolver);
             }
         }
-        $$es6$promise$promise$$Promise.all = $$promise$all$$default;
-        $$es6$promise$promise$$Promise.race = $$promise$race$$default;
-        $$es6$promise$promise$$Promise.resolve = $$promise$resolve$$default;
-        $$es6$promise$promise$$Promise.reject = $$promise$reject$$default;
-        $$es6$promise$promise$$Promise.prototype = {
+        (<any> $$es6$promise$promise$$Promise).all = $$promise$all$$default;
+        (<any> $$es6$promise$promise$$Promise).race = $$promise$race$$default;
+        (<any> $$es6$promise$promise$$Promise).resolve = $$promise$resolve$$default;
+        (<any> $$es6$promise$promise$$Promise).reject = $$promise$reject$$default;
+        (<any> $$es6$promise$promise$$Promise).prototype = {
             constructor: $$es6$promise$promise$$Promise,
             /**
               The primary way of interacting with a promise is through its `then` method,
@@ -807,7 +830,7 @@ var FlorianMath;
                     var callback = arguments[state - 1];
                     $$asap$$default(function () {
                         $$$internal$$invokeCallback(state, child, callback, result);
-                    });
+                    }, undefined);
                 }
                 else {
                     $$$internal$$subscribe(parent, child, onFulfillment, onRejection);
@@ -847,4 +870,5 @@ var FlorianMath;
         };
         return $$es6$promise$promise$$default;
     })(window);
-})(FlorianMath || (FlorianMath = {}));
+
+}

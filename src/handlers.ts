@@ -1,3 +1,4 @@
+/// <reference path="promise.ts" />
 /// <reference path="common-utils.ts" />
 /// <reference path="dom-utils.ts" />
 /// <reference path="xml-utils.ts" />
@@ -23,7 +24,7 @@ module FlorianMath {
         }
     }
 
-    function getMathMLMarkup(el: HTMLElement, root: Element): Promise<MarkupData[]> {
+    function getMathMLMarkup(el: HTMLElement, root: Element): IPromise<MarkupData[]> {
         if (root === null)
             return Promise.resolve([]);
         return Promise.resolve([
