@@ -3,17 +3,18 @@ module.exports = function(grunt) {
     grunt.initConfig({
         clean: {
             dist: ['dist'],
-            temps: ['src/math-item.js*', 'src/handlers.js*']
         },
-        concat: {
-            math_item: {
-                src: ['src/promise-polyfill.js', 'dist/math-item.js'],
-                dest: 'dist/math-item-element.js'
+        connect: {
+            root: {
+                options: {
+                    port: 8080,
+                    base: './'
+                }
             }
         },
         typescript: {
             math_item: {
-                src: ['src/math-item.ts', 'src/handlers.ts'],
+                src: ['src/math-item.ts'],
                 dest: 'dist/math-item.js',
                 options: {
                     target: 'es3',
@@ -22,20 +23,20 @@ module.exports = function(grunt) {
                 }
             },
         },
-        uglify: {
+        watch: {
             math_item: {
-                files: {
-                    'dist/math-item-element.min.js': ['dist/math-item-element.js']
-                }
+                files: ['src/math-item.ts'],
+                tasks: ['typescript:math_item']
             }
         }
     });
  
-    grunt.loadNpmTasks('grunt-typescript');
     grunt.loadNpmTasks('grunt-contrib-clean');
-    grunt.loadNpmTasks('grunt-contrib-concat');
-    grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-connect');
+    grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-typescript');
 
-    grunt.registerTask('default', ['clean', 'typescript', 'concat', 'uglify']);
+    grunt.registerTask('default', ['clean', 'typescript']);
+    grunt.registerTask('serve', ['connect', 'watch']);
 
 };
