@@ -10,7 +10,7 @@ module.exports = function(grunt) {
                 dest: 'dist/math-item-element.js',
                 options: {
                     target: 'es3',
-                    sourceMap: true,
+                    sourceMap: false,
                     declaration: true
                 }
             },
