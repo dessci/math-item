@@ -36,6 +36,7 @@ module FlorianMath {
 
     export interface PromiseWithResolve<T> extends Promise<T> {
         resolve(val?: T): void;
+        isResolved: boolean;
     }
 
     export interface IUtils {
@@ -165,11 +166,12 @@ module FlorianMath {
             toArray: <T>(list: List<T>): T[]=> map(list, (item: T) => item)
         },
         makePromiseWithResolve: function <T>(): PromiseWithResolve<T> {
-            var resolver, promise;
+            var resolver, promise: PromiseWithResolve<T>;
             promise = <PromiseWithResolve<T>> new Promise<T>((resolve: (val?: T) => void) => {
                 resolver = resolve;
             });
-            promise.resolve = resolver;
+            promise.isResolved = false;
+            promise.resolve = (val?: T) => { promise.isResolved = true; resolver(val); };
             return promise;
         }
     };
