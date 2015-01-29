@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>math-item with math-sources</title>
+    <script src="../libs/CustomElements.js"></script>
     <script src="../dist/math-item.js"></script>
     <!--<script type="text/x-mathjax-config">
         MathJax.Hub.Config({
@@ -27,6 +28,9 @@
             max-width: 100%;
             margin: 0 auto;
         }
+        math-source {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -34,6 +38,15 @@
 
         <h1>math-item with math-sources</h1>
 
+        <p>Some inline <math-item>x<sub>2</sub></math-item> equation.</p>
+
+        <p>Pre block</p>
+
+        <math-item>
+            <math-source type="application/x-tex">\sum_{k=1}^n k^3</math-source>
+        </math-item>
+
+        <p>Post block</p>
 
     </div>
 </body>
