@@ -5,15 +5,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>math-item with math-sources</title>
-    <script src="../libs/CustomElements.js"></script>
+    <!--<script src="../libs/CustomElements.js"></script>-->
+    <script src="../libs/webcomponents.js"></script>
     <script src="../dist/math-item.js"></script>
-    <!--<script type="text/x-mathjax-config">
+    <script src="../dist/mathjax-tex.js"></script>
+    <script src="../dist/mathjax-mml.js"></script>
+    <!--<script src="../dist/native-mml.js"></script>-->
+    <script type="text/x-mathjax-config">
         MathJax.Hub.Config({
             skipStartupTypeset: true,
-            showMathMenu: false
+            showMathMenu: false,
+            menuSettings: {CHTMLpreview: false}
         });
     </script>
-    <script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>-->
+    <script src="http://cdn.mathjax.org/mathjax/2.4-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <!--<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>-->
     <style>
         p > math-item, math-item[display="inline"], span.math-item {
@@ -28,8 +33,15 @@
             max-width: 100%;
             margin: 0 auto;
         }
-        math-source {
+        math-item[state="rendering"] {
+            border: 1px solid red;
+            min-height: 1em;
+        }
+        math-item > math-source {
             display: none;
+        }
+        math-item > math-source[show] {
+            display: inline-block;
         }
     </style>
 </head>
@@ -42,11 +54,23 @@
 
         <p>Pre block</p>
 
-        <math-item>
+        <math-item state="preview">
+            sum(k=1, n) k<sup>3</sup>
             <math-source type="application/x-tex">\sum_{k=1}^n k^3</math-source>
         </math-item>
 
-        <p>Post block</p>
+        <p>Post block <math-item>
+            <math><mi>x</mi></math>
+
+            <math-source type="application/x-tex">x_3</math-source>
+        </math-item> with some more inline math.</p>
+
+        <p>Post block <math-item>
+
+            <math-source type="application/x-tex">x_3</math-source>
+
+
+        </math-item> with some more inline math.</p>
 
     </div>
 </body>

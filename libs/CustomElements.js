@@ -603,12 +603,14 @@ CustomElements.addModule(function(scope) {
   function upgradeDocumentTree(doc) {
     forDocumentTree(doc, upgradeDocument);
   }
-  var originalCreateShadowRoot = Element.prototype.createShadowRoot;
-  Element.prototype.createShadowRoot = function() {
-    var root = originalCreateShadowRoot.call(this);
-    CustomElements.watchShadow(this);
-    return root;
-  };
+    var originalCreateShadowRoot = Element.prototype.createShadowRoot;
+    if (originalCreateShadowRoot) {
+        Element.prototype.createShadowRoot = function () {
+            var root = originalCreateShadowRoot.call(this);
+            CustomElements.watchShadow(this);
+            return root;
+        };
+    }
   scope.watchShadow = watchShadow;
   scope.upgradeDocumentTree = upgradeDocumentTree;
   scope.upgradeSubtree = addedSubtree;

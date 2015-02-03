@@ -16,17 +16,40 @@ module.exports = function(grunt) {
             math_item: {
                 src: ['src/math-item.ts'],
                 dest: 'dist/math-item.js',
-                options: {
-                    target: 'es3',
-                    sourceMap: true,
-                    declaration: true
-                }
+                options: { target: 'es3', sourceMap: true, declaration: true }
+            },
+            mathjax_tex: {
+                src: ['src/mathjax-tex.ts'],
+                dest: 'dist/mathjax-tex.js',
+                options: { target: 'es3', sourceMap: true }
+            },
+            mathjax_mml: {
+                src: ['src/mathjax-mml.ts'],
+                dest: 'dist/mathjax-mml.js',
+                options: { target: 'es3', sourceMap: true }
+            },
+            native_mml: {
+                src: ['src/native-mml.ts'],
+                dest: 'dist/native-mml.js',
+                options: { target: 'es3', sourceMap: true }
             },
         },
         watch: {
             math_item: {
-                files: ['src/math-item.ts'],
+                files: ['src/utils.ts', 'src/math-item.ts'],
                 tasks: ['typescript:math_item']
+            },
+            mathjax_tex: {
+                files: ['dist/math-item.d.ts', 'src/mathjax-tex.ts'],
+                tasks: ['typescript:mathjax_tex']
+            },
+            mathjax_mml: {
+                files: ['dist/math-item.d.ts', 'src/mathjax-mml.ts'],
+                tasks: ['typescript:mathjax_mml']
+            },
+            native_mml: {
+                files: ['dist/math-item.d.ts', 'src/native-mml.ts'],
+                tasks: ['typescript:native_mml']
             }
         }
     });
@@ -36,7 +59,8 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-typescript');
 
-    grunt.registerTask('default', ['clean', 'typescript']);
+    grunt.registerTask('default', ['clean', 'typescript:math_item', 'typescript:mathjax_tex',
+        'typescript:mathjax_mml', 'typescript:native_mml']);
     grunt.registerTask('serve', ['connect', 'watch']);
 
 };
