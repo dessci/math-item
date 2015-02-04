@@ -91,7 +91,7 @@ module FlorianMath {
     export function iterateSourceElementsForRendering(el: IHTMLMathItemElement, encoding: string,
             fn: (source: IHTMLMathSourceElement) => void) {
         iterateSourceElements(el, (source: IHTMLMathSourceElement) => {
-            if (!sourceForPreview(source) && sourceEncoding(source) === encoding)
+            if (!source.getAttribute('usage') && sourceEncoding(source) === encoding)
                 fn(source);
         });
     }

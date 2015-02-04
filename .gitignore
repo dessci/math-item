@@ -10,3 +10,6 @@ test/*.js
 obj/
 *.log
 *.js.map
+bin
+bower.json
+bower_components
