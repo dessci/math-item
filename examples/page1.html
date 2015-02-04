@@ -50,27 +50,26 @@
 
         <h1>math-item with math-sources</h1>
 
-        <p>Some inline <math-item>x<sub>2</sub></math-item> equation.</p>
+        <p>Some inline <math-item><math-source>x<sub>2</sub></math-source></math-item> equation.</p>
 
         <p>Pre block</p>
 
-        <math-item state="preview">
-            sum(k=1, n) k<sup>3</sup>
+        <math-item>
+            <math-source usage="preview">sum(k=1, n) k<sup>3</sup></math-source>
             <math-source type="application/x-tex">\sum_{k=1}^n k^3</math-source>
         </math-item>
 
-        <p>Post block <math-item>
-            <math><mi>x</mi></math>
+        <p>
+            Post block <math-item>
+                <math-source type="application/mathml+xml"><math><mi>x</mi></math></math-source>
+                <math-source type="application/x-tex">x_3</math-source>
+            </math-item> with some more inline math.
+        </p>
 
-            <math-source type="application/x-tex">x_3</math-source>
-        </math-item> with some more inline math.</p>
-
-        <p>Post block <math-item>
-
-            <math-source type="application/x-tex">x_3</math-source>
-
-
-        </math-item> with some more inline math.</p>
+        <p>
+            Post block <math-item><math-source type="application/x-tex">x_3</math-source></math-item>
+            with some more inline math.
+        </p>
 
     </div>
 </body>

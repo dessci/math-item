@@ -2,8 +2,13 @@
 
 module FlorianMath {
 
+    export interface RenderOutput {
+        element: Node;
+        done: () => void;
+    }
+
     export interface Renderer {
-        (start: () => Node, done: () => void): void;
+        (insertion: (showSource: IHTMLMathSourceElement[]) => RenderOutput): void;
     }
 
     export interface IHTMLMathItemElement extends HTMLElement {
@@ -101,38 +106,7 @@ module FlorianMath {
 
     (function (global: Window, doc: Document) {
 
-        var counter = 0;
-
-        function mathItemRenderStart(el: IHTMLMathItemElement): Node {
-            var dest: Node = el;
-            el.setAttribute('state', 'rendering');
-            iterateChildren(el, (c: Node) => {
-                if (c.nodeType === 1 && (<Element> c).tagName.toLowerCase() === MATH_SOURCE_TAG)
-                    (<Element> c).removeAttribute('show');
-                else
-                    el.removeChild(c);
-            });
-            if (el.shadowRoot) {
-                dest = el.shadowRoot;
-                iterateChildren(dest, (c: Node) => {
-                    dest.removeChild(c);
-                });
-            } else if (el.createShadowRoot)
-                dest = el.createShadowRoot();
-            return dest;
-        }
-
-        function mathItemRenderDone(el: IHTMLMathItemElement) {
-            if (!el.shadowRoot) {
-                iterateChildren(el, (c: Node) => {
-                    if (c.nodeType === 1 && (<Element> c).tagName.toLowerCase() === 'content')
-                        el.removeChild(c);
-                });
-            }
-            el.removeAttribute('state');
-        }
-
-        function normalize(el: IHTMLMathItemElement) {
+        /*function normalize(el: IHTMLMathItemElement) {
             var nodes: Node[] = [], c = el.firstChild, t, mainMathElement,
                 trivial = true, isPreview = el.getAttribute('state') === 'preview';
             while (c) {
@@ -172,6 +146,41 @@ module FlorianMath {
                 });
                 el.appendChild(source);
             }
+        }*/
+
+        var counter = 0;
+
+        function mathItemRenderDone(el: IHTMLMathItemElement) {
+            el.removeAttribute('state');
+        }
+
+        function mathItemRenderStart(el: IHTMLMathItemElement, showSources: IHTMLMathSourceElement[]): RenderOutput {
+            var shadow: Node = el.shadowRoot;
+            el.setAttribute('state', 'rendering');
+            iterateChildren(el, (c: Node) => {
+                if (c.nodeType === 1 && (<Element> c).tagName.toLowerCase() === MATH_SOURCE_TAG)
+                    (<Element> c).removeAttribute('show');
+                else
+                    el.removeChild(c);
+            });
+            if (shadow) {
+                iterateChildren(shadow, (c: Node) => {
+                    shadow.removeChild(c);
+                });
+            }
+            if (showSources) {
+                each(showSources, (source: IHTMLMathSourceElement) => {
+                    source.setAttribute('show', '');
+                });
+                if (shadow)
+                    shadow.appendChild(doc.createElement('content'));
+                mathItemRenderDone(el);
+            } else {
+                return {
+                    element: shadow ? shadow : el.createShadowRoot ? el.createShadowRoot() : el,
+                    done: () => { mathItemRenderDone(el); }
+                };
+            }
         }
 
         function doPreview(el: IHTMLMathItemElement) {
@@ -193,22 +202,22 @@ module FlorianMath {
             if (!el._private.updatePending) {
                 el._private.updatePending = true;
                 async(() => {
+                    function insertion(showSources?: IHTMLMathSourceElement[]) {
+                        return mathItemRenderStart(el, showSources);
+                    }
                     el._private.updatePending = false;
                     if (el._private.firstPass) {
                         el._private.firstPass = false;
-                        normalize(el);
+                        //normalize(el);
                         doPreview(el);
                     }
-                    el.render(
-                        () => mathItemRenderStart(el),
-                        () => { mathItemRenderDone(el); }
-                    );
+                    el.render(insertion);
                 });
             }
         }
 
-        function renderProxy(start: () => Node, done: () => void) {
-            global.HTMLMathItemElement.render.call(this, start, done);
+        function renderProxy(insertion: (showSource: IHTMLMathSourceElement[]) => RenderOutput) {
+            global.HTMLMathItemElement.render.call(this, insertion);
         }
 
         function mathItemCreated() {
@@ -280,16 +289,10 @@ module FlorianMath {
 
         }
 
-        global.HTMLMathItemElement.render = function (start: () => Node, done: () => void) {
-            var el: IHTMLMathItemElement = this,
-                toShow = getSourceElementsForRendering(el, MIME_TYPE_HTML);
+        global.HTMLMathItemElement.render = function (insertion: (showSource: IHTMLMathSourceElement[]) => RenderOutput) {
+            var toShow = getSourceElementsForRendering(this, MIME_TYPE_HTML);
             if (toShow.length) {
-                var dest = start();
-                each(toShow, (source: IHTMLMathSourceElement) => {
-                    source.setAttribute('show', '');
-                });
-                dest.appendChild(doc.createElement('content'));
-                done();
+                insertion(toShow);
             }
         };
 

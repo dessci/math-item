@@ -8,18 +8,13 @@ declare var MathJax: any;
 
         var origRender = global.HTMLMathItemElement.render;
 
-        global.HTMLMathItemElement.render = function (start: () => Node, done: () => void) {
-            var el: FlorianMath.IHTMLMathItemElement = this;
+        global.HTMLMathItemElement.render = function (insertion: (showSource: FlorianMath.IHTMLMathSourceElement[]) => FlorianMath.RenderOutput) {
             if (MathJax && MathJax.Hub && MathJax.Hub.Queue) {
-                var sources = FlorianMath.getSourceElementsForRendering(el, FlorianMath.MIME_TYPE_MATHML);
-                if (sources.length) {
-                    var dest = start();
-                    sources[0].setAttribute('show', '');
-                    dest.appendChild(doc.createElement('content'));
-                    return done();
-                }
+                var sources = FlorianMath.getSourceElementsForRendering(this, FlorianMath.MIME_TYPE_MATHML);
+                if (sources.length)
+                    return insertion(sources);
             }
-            origRender.call(el, start, done);
+            origRender.call(this, insertion);
         }
 
     }
