@@ -87,6 +87,7 @@ module FlorianMath {
     interface IHub {
         Queue(fn: any[], ...fns: any[]);
         getAllJax(el: Element): Jax[];
+        config: any;
     }
 
     interface IMathJax {
@@ -105,7 +106,7 @@ module FlorianMath {
             dest.appendChild(script);
         }
         return new Promise<void>((resolve: () => void) => {
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub, dest], resolve);
+            MathJax.Hub.Queue(['Typeset', MathJax.Hub, script], resolve);
         });
     }
 
@@ -143,9 +144,11 @@ module FlorianMath {
             return mathjaxMarkup(el, this.original, this.internal);
         }
         ready(el: HTMLMathItemElement) {
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub, el], () => {
-                (<PromiseWithResolve<void>> el.rendered()).resolve();
-            });
+            if (MathJax.Hub.config.skipStartupTypeset) {
+                MathJax.Hub.Queue(['Typeset', MathJax.Hub, el], () => {
+                    (<PromiseWithResolve<void>> el.rendered()).resolve();
+                });
+            }
             el.clonePresentation = (dest: HTMLElement) => mathjaxClone(el, dest);
             el.getMarkup = () => this.getMarkup(el);
         }
