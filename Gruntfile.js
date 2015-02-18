@@ -38,6 +38,11 @@ module.exports = function(grunt) {
                 dest: 'dist/eqnstore-source.js',
                 options: { target: 'es3', sourceMap: true }
             },
+            autowrap_mathjax: {
+                src: ['src/autowrap-mathjax.ts'],
+                dest: 'dist/autowrap-mathjax.js',
+                options: { target: 'es3', sourceMap: true }
+            },
         },
         watch: {
             math_item: {
@@ -59,6 +64,10 @@ module.exports = function(grunt) {
             eqnstore_source: {
                 files: ['dist/math-item.d.ts', 'src/eqnstore-source.ts'],
                 tasks: ['typescript:eqnstore_source']
+            },
+            autowrap_mathjax: {
+                files: ['dist/math-item.d.ts', 'src/autowrap-mathjax.ts'],
+                tasks: ['typescript:autowrap_mathjax']
             }
         }
     });
@@ -69,7 +78,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-typescript');
 
     grunt.registerTask('default', ['clean', 'typescript:math_item', 'typescript:mathjax_tex',
-        'typescript:mathjax_mml', 'typescript:native_mml', 'typescript:eqnstore_source']);
+        'typescript:mathjax_mml', 'typescript:native_mml', 'typescript:eqnstore_source', 'typescript:autowrap_mathjax']);
     grunt.registerTask('serve', ['connect', 'watch']);
 
 };

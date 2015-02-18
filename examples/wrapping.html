@@ -10,7 +10,8 @@
     <script src="../libs/webcomponents.js"></script>
     <script src="../dist/math-item.js"></script>
     <script src="../dist/mathjax-tex.js"></script>
-    <script src="../dist/mathjax-mml.js"></script>
+    <script src="../dist/native-mml.js"></script>
+    <!--<script src="../dist/mathjax-mml.js"></script>-->
     <script src="../dist/eqnstore-source.js"></script>
     <script type="text/x-mathjax-config">
         MathJax.Hub.Config({
@@ -100,10 +101,10 @@
 
                 <p>
                     A paragraph with <math-item>
-                        <math-source type="application/mathml+xml">
+                        <math-source type="application/mathml+xml" id="source1">
                             <math><msup><mi>x</mi><mn>2</mn></msup></math>
                         </math-source>
-                    </math-item> inline math
+                    </math-item> inline math.
                 </p>
 
                 <math-item>

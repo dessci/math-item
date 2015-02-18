@@ -6,11 +6,10 @@
 
         var origRender = global.HTMLMathItemElement.render;
 
-        global.HTMLMathItemElement.render = function (insertion: () => FlorianMath.RenderOutput) {
-            var el: FlorianMath.IHTMLMathItemElement = this,
-                sources = FlorianMath.getSourceElementsForRendering(el, 'image/png');
+        global.HTMLMathItemElement.render = function () {
+            var sources = (<IHTMLMathItemElement> this).getRenderElements('image/png');
             if (sources.length) {
-                var output = insertion(),
+                var output = FlorianMath.mathItemInsertContent(this),
                     img = doc.createElement('img'),
                     styles = [];
                 img.src = sources[0].getAttribute('src');
@@ -23,7 +22,7 @@
                 output.element.appendChild(img);
                 return output.done();
             }
-            origRender.call(el, insertion);
+            origRender.call(this);
         }
 
     }

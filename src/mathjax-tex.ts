@@ -8,24 +8,23 @@ declare var MathJax: any;
 
         var origRender = global.HTMLMathItemElement.render;
 
-        global.HTMLMathItemElement.render = function (insertion: () => FlorianMath.RenderOutput) {
-            var el: FlorianMath.IHTMLMathItemElement = this;
+        global.HTMLMathItemElement.render = function () {
             if (MathJax && MathJax.Hub && MathJax.Hub.Queue) {
-                var sources = FlorianMath.getSourceElementsForRendering(el, FlorianMath.MIME_TYPE_TEX);
+                var sources = (<IHTMLMathItemElement> this).getRenderElements(FlorianMath.MIME_TYPE_TEX);
                 if (sources.length) {
                     var script = doc.createElement('script'),
-                        displayStyle = FlorianMath.getElementStyle(el, 'display'),
-                        output = insertion();
+                        displayStyle = FlorianMath.getElementStyle(this, 'display'),
+                        output = FlorianMath.mathItemInsertContent(this);
                     script.type = 'math/tex';
                     if (displayStyle === 'block' || displayStyle === 'inline-block')
                         script.type += '; mode=display';
-                    script.text = sources[0].innerHTML;
+                    script.text = FlorianMath.trim(sources[0].innerHTML);
                     output.element.appendChild(script);
                     MathJax.Hub.Queue(['Typeset', MathJax.Hub, script], output.done);
                     return;
                 }
             }
-            origRender.call(el, insertion);
+            origRender.call(this);
         }
 
     }

@@ -8,21 +8,21 @@ declare var MathJax: any;
 
         var origRender = global.HTMLMathItemElement.render;
 
-        global.HTMLMathItemElement.render = function (insertion: () => FlorianMath.RenderOutput) {
-            var el: FlorianMath.IHTMLMathItemElement = this;
+        global.HTMLMathItemElement.render = function () {
             if (MathJax && MathJax.Hub && MathJax.Hub.Queue) {
-                var sources = FlorianMath.getSourceElementsForRendering(el, FlorianMath.MIME_TYPE_MATHML);
+                var sources = (<IHTMLMathItemElement> this).getRenderElements(FlorianMath.MIME_TYPE_MATHML);
                 if (sources.length) {
                     var script = doc.createElement('script'),
-                        output = insertion();
+                        output = FlorianMath.mathItemInsertContent(this);
                     script.type = 'math/mml';
-                    script.text = sources[0].innerHTML;
+                    // lower case is important to MathJax (IE8 converts to upper case)
+                    script.text = FlorianMath.trim(sources[0].innerHTML.toLowerCase());
                     output.element.appendChild(script);
                     MathJax.Hub.Queue(['Typeset', MathJax.Hub, script], output.done);
                     return;
                 }
             }
-            origRender.call(el, insertion);
+            origRender.call(this);
         }
 
     }

@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Autowrap MathJax TeX</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/pure-min.css">
+    <!--<script src="../libs/webcomponents.js"></script>-->
+    <script src="../dist/math-item.js"></script>
+    <script src="../dist/mathjax-tex.js"></script>
+    <script src="../dist/autowrap-mathjax.js"></script>
+    <!--<script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            skipStartupTypeset: false,
+            showMathMenu: false,
+            menuSettings: {CHTMLpreview: false}
+        });
+    </script>-->
+    <script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <style>
+        p > math-item, math-item[display="inline"] {
+            display: inline;
+        }
+        div > math-item, math-item[display="block"] {
+            display: block;
+            text-align: center;
+        }
+        math-item > math-source {
+            display: none;
+        }
+        math-item > math-source[show] {
+            display: inline-block;
+        }
+
+        #container {
+            width: 60em;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .list-unstyled {
+            list-style-type: none;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+
+        <div class="pure-g">
+
+            <div class="pure-u-1">
+                <h1>Autowrap MathJax</h1>
+            </div>
+
+            <div class="pure-u-2-3">
+
+                <h3>TeX</h3>
+
+                <p>
+                    A paragraph with \(\sin(x)\) inline math.
+                </p>
+
+                \[J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\bigl({\frac{x}{2}}\bigr)}^{2 m + \alpha}\]
+
+                <h3>MathML + MathJax</h3>
+
+                <p>
+                    A paragraph with <math><msup><mi>x</mi><mn>2</mn></msup></math> inline math.
+                </p>
+
+                <math display="block">
+                    <mstyle displaystyle="true">
+                        <mi>f</mi>
+                        <mrow>
+                            <mo>(</mo>
+                            <mi>a</mi>
+                            <mo>)</mo>
+                        </mrow>
+                        <mo>=</mo>
+                        <mfrac>
+                            <mn>1</mn>
+                            <mrow>
+                                <mn>2</mn>
+                                <mi>π<!-- π --></mi>
+                                <mi>i</mi>
+                            </mrow>
+                        </mfrac>
+                        <msub>
+                            <mo>∮</mo>
+                            <mrow>
+                                <mi>γ</mi>
+                            </mrow>
+                        </msub>
+                        <mfrac>
+                            <mrow>
+                                <mi>f</mi>
+                                <mo>(</mo>
+                                <mi>z</mi>
+                                <mo>)</mo>
+                            </mrow>
+                            <mrow>
+                                <mi>z</mi>
+                                <mo>−</mo>
+                                <mi>a</mi>
+                            </mrow>
+                        </mfrac>
+                        <mi>d</mi>
+                        <mi>z</mi>
+                    </mstyle>
+                </math>
+
+            </div>
+            <div class="pure-u-1-24"></div>
+            <div class="pure-u-7-24">
+                <h4>About</h4>
+                <p>This is a blog about bla bla bla...</p>
+
+                <h4>Resources</h4>
+                <ul class="list-unstyled">
+                    <li><i class="fa fa-list fa-fw"></i> <a href="#">All posts</a></li>
+                    <li><i class="fa fa-twitter fa-fw"></i> <a href="#">@myusername</a></li>
+                    <li><i class="fa fa-rss fa-fw"></i> <a href="#">Subscribe in a reader</a></li>
+                    <li><i class="fa fa-superscript fa-fw"></i> <a id="math-ui-dashboard-trigger" href="#">MathUI Dashboard</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            setTimeout(function () {
+                var script = document.createElement('script');
+                script.type = 'math/tex; mode=display';
+                script.text = '\\sum_{k=1}^n k^2';
+                document.querySelector('div.pure-u-2-3').appendChild(script);
+                MathJax.Hub.Queue(['Typeset', MathJax.Hub, script]);
+            }, 2000);
+        })();
+    </script>
+</body>
+</html>
