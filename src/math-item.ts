@@ -9,8 +9,8 @@ interface HTMLMathItemElementStatic {
     new (): IHTMLMathItemElement;
     prototype: IHTMLMathItemElement;
     render(): void;
-    created(): void;
-    attached(): void;
+    created?(): void;
+    attached?(): void;
 }
 
 interface IHTMLMathSourceElement extends HTMLElement {
@@ -19,8 +19,8 @@ interface IHTMLMathSourceElement extends HTMLElement {
 interface HTMLMathSourceElementStatic {
     new (): IHTMLMathSourceElement;
     prototype: IHTMLMathSourceElement;
-    created(): void;
-    attached(): void;
+    created?(): void;
+    attached?(): void;
 }
 
 interface Document {
@@ -241,6 +241,11 @@ module FlorianMath {
             mathItemUpdate(<IHTMLMathItemElementPrivate> parent);
     }
 
+    var initializedPromise: IPromise<void>;
+    export function initialized() {
+        return initializedPromise;
+    }
+
     if (doc.registerElement) {
 
         var MathItemPrototype = Object.create(HTMLElement.prototype, {
@@ -258,6 +263,8 @@ module FlorianMath {
         global.HTMLMathItemElement = doc.registerElement(FlorianMath.MATH_ITEM_TAG, { prototype: MathItemPrototype });
         global.HTMLMathSourceElement = doc.registerElement(FlorianMath.MATH_SOURCE_TAG, { prototype: MathSourcePrototype });
 
+        initializedPromise = Promise.resolve<void>();
+
     } else {
 
         global.HTMLMathItemElement = <any> {
@@ -272,16 +279,19 @@ module FlorianMath {
         doc.createElement(FlorianMath.MATH_ITEM_TAG);
         doc.createElement(FlorianMath.MATH_SOURCE_TAG);
 
-        FlorianMath.domReady().then(() => {
-            each(doc.querySelectorAll(MATH_ITEM_TAG), (item: Node) => {
-                var mathItem = <IHTMLMathItemElement> item;
-                mathItemCreated.call(mathItem);
-                mathItemAttached.call(mathItem);
-            });
-            each(doc.querySelectorAll(MATH_SOURCE_TAG), (item: Node) => {
-                var mathSource = <IHTMLMathSourceElement> item;
-                mathSourceCreated.call(mathSource);
-                mathSourceAttached.call(mathSource);
+        initializedPromise = new Promise<void>((resolve: () => void) => {
+            domReady().then(() => {
+                each(doc.querySelectorAll(MATH_ITEM_TAG), (item: Node) => {
+                    var mathItem = <IHTMLMathItemElement> item;
+                    mathItemCreated.call(mathItem);
+                    mathItemAttached.call(mathItem);
+                });
+                each(doc.querySelectorAll(MATH_SOURCE_TAG), (item: Node) => {
+                    var mathSource = <IHTMLMathSourceElement> item;
+                    mathSourceCreated.call(mathSource);
+                    mathSourceAttached.call(mathSource);
+                });
+                resolve();
             });
         });
 

@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Base Tests</title>
+    <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
+    <script src="../dist/math-item.js"></script>
+</head>
+<body>
+    <div id="mocha"></div>
+
+    <math-item>
+        <math-source>x<sub>1</sub></math-source>
+    </math-item>
+
+    <div>
+        <math-item>
+            <math-source>x<sub>2</sub></math-source>
+        </math-item>
+        <p>
+            <math-item>
+                <math-source>x<sub>3</sub></math-source>
+            </math-item>
+        </p>
+    </div>
+
+    <script src="../node_modules/expect.js/index.js"></script>
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script>mocha.setup('bdd')</script>
+    <script src="base.js"></script>
+    <script src="sauce-report.js"></script>
+</body>
+</html>

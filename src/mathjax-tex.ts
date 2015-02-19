@@ -1,6 +1,5 @@
 /// <reference path="../dist/math-item.d.ts" />
-
-declare var MathJax: any;
+/// <reference path="mathjax.d.ts" />
 
 (function (global: Window, doc: Document) {
 

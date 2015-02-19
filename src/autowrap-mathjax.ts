@@ -1,29 +1,36 @@
 /// <reference path="../dist/math-item.d.ts" />
-
-declare var MathJax: any;
+/// <reference path="mathjax.d.ts" />
 
 (function (global: Window, doc: Document) {
 
-    function createMathItem() {
+    function setAttributes(el: HTMLElement, attrs: {[key: string]: string}) {
+        for (var name in attrs)
+            if (attrs.hasOwnProperty(name))
+                el.setAttribute(name, attrs[name]);
+    }
+
+    function createMathItem(attrs: {[key: string]: string}) {
         var mathItem = doc.createElement('math-item');
         if (global.HTMLMathItemElement.created)
             global.HTMLMathItemElement.created.call(mathItem);
+        setAttributes(mathItem, attrs);
         return mathItem;
     }
 
-    function mathItemAttached(mathItem: IHTMLMathItemElement) {
+    function attachMathItem(mathItem: IHTMLMathItemElement) {
         if (global.HTMLMathItemElement.attached)
             global.HTMLMathItemElement.attached.call(mathItem);
     }
 
-    function createMathSource() {
+    function createMathSource(attrs: {[key: string]: string}) {
         var mathSource = doc.createElement('math-source');
         if (global.HTMLMathSourceElement.created)
             global.HTMLMathSourceElement.created.call(mathSource);
+        setAttributes(mathSource, attrs);
         return mathSource;
     }
 
-    function mathSourceAttached(mathSource: IHTMLMathSourceElement) {
+    function attachMathSource(mathSource: IHTMLMathSourceElement) {
         if (global.HTMLMathSourceElement.attached)
             global.HTMLMathSourceElement.attached.call(mathSource);
     }
@@ -33,7 +40,7 @@ declare var MathJax: any;
 
         if (!(MathJax && MathJax.Hub)) return;
 
-        function toMathML(jax, callback) {
+        function toMathML(jax: Jax, callback: (string) => void) {
             var mml;
             try {
                 mml = jax.root.toMathML("");
@@ -41,11 +48,11 @@ declare var MathJax: any;
                 if (!err.restart) { throw err; } // an actual error
                 return MathJax.Callback.After([toMathML, jax, callback], err.restart);
             }
-            MathJax.Callback(callback)(mml);
+            callback(mml);
         }
 
-        function wrap(jax) {
-            var script: HTMLScriptElement, parent, html, display, mimetype, preview, mathitem, mathsrc, output;
+        function wrap(jax: Jax) {
+            var script, parent, html, display, mimetype, preview, mathitem, mathsrc, output;
 
             script = jax.SourceElement();
             parent = script.parentElement;
@@ -70,18 +77,15 @@ declare var MathJax: any;
             console.log('Wrapping ' + script.id);
             if (html.previousSibling && html.previousSibling.className === 'MathJax_Preview')
                 preview = html.previousSibling;
-            mathitem = createMathItem();
-            mathitem.setAttribute('display', display);
+            mathitem = createMathItem({'display': display});
 
-            mathsrc = createMathSource();
-            mathsrc.setAttribute('type', mimetype);
-            mathsrc.setAttribute('usage', 'norender');
+            mathsrc = createMathSource({'type': mimetype, 'usage': 'norender'});
             mathsrc.appendChild(doc.createTextNode(jax.originalText));
             mathitem.appendChild(mathsrc);
 
             parent.insertBefore(mathitem, script);
-            mathItemAttached(mathitem);
-            mathSourceAttached(mathsrc);
+            attachMathItem(mathitem);
+            attachMathSource(mathsrc);
             output = FlorianMath.mathItemInsertContent(mathitem);
             if (preview)
                 output.element.appendChild(preview);
@@ -90,19 +94,18 @@ declare var MathJax: any;
             output.done();
 
             toMathML(jax, (mml: string) => {
-                mathsrc = createMathSource();
-                mathsrc.setAttribute('type', 'application/mathml+xml');
-                mathsrc.setAttribute('name', 'MathJax');
-                mathsrc.setAttribute('usage', 'norender');
+                mathsrc = createMathSource({'type': 'application/mathml+xml', 'name': 'MathJax', 'usage': 'norender'});
                 mathsrc.appendChild(doc.createTextNode(mml));
                 mathitem.appendChild(mathsrc);
-                mathSourceAttached(mathsrc);
+                attachMathSource(mathsrc);
             });
         }
+
         MathJax.Hub.Register.MessageHook('New Math', function (message) {
             var jax = MathJax.Hub.getJaxFor(message[1]);
             if (jax) queue.push(jax);
         });
+
         MathJax.Hub.Register.MessageHook('End Process', function () {
             FlorianMath.each(queue, wrap);
             queue = [];
