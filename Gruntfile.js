@@ -3,7 +3,7 @@ module.exports = function(grunt) {
     grunt.initConfig({
         clean: {
             dist: ['dist'],
-            test: ['test/base.js']
+            test: ['test/base-*.js']
         },
         connect: {
             root: {
@@ -45,7 +45,8 @@ module.exports = function(grunt) {
                 options: { target: 'es3', sourceMap: true }
             },
             test: {
-                src: ['test/*.ts']
+                src: ['test/*.ts'],
+                options: { declaration: true }
             }
         },
         watch: {
@@ -74,7 +75,7 @@ module.exports = function(grunt) {
                 tasks: ['typescript:autowrap_mathjax']
             },
             tests: {
-                files: ['test/*.ts'],
+                files: ['test/base-app.ts', 'test/base-tests.ts'],
                 tasks: ['typescript:test']
             }
         },
@@ -85,7 +86,6 @@ module.exports = function(grunt) {
                     //key: process.env.SAUCE_ACCESS_KEY,
                     urls: ['localhost:8080/test/base.html'],
                     testname: 'math-source test',
-                    //'max-duration': 300,
                     browsers: [
                         ['Windows XP', 'internet explorer', 8],
                         ['Windows 7', 'internet explorer', 9],

@@ -6,29 +6,49 @@
     <title>Base Tests</title>
     <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
     <script src="../dist/math-item.js"></script>
+    <script src="base-app.js"></script>
+    <style>
+        #container {
+            margin: 1em;
+            border: 1px solid black;
+            padding: 1em;
+        }
+        math-item > math-source {
+            display: none;
+        }
+        math-item > math-source[show] {
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
     <div id="mocha"></div>
 
-    <math-item>
-        <math-source>x<sub>1</sub></math-source>
-    </math-item>
-
-    <div>
-        <math-item>
-            <math-source>x<sub>2</sub></math-source>
+    <div id="container">
+        <math-item id="item1">
+            <math-source>A1</math-source>
+            <math-source type="type/2" usage="norender">C1</math-source>
         </math-item>
-        <p>
-            <math-item>
-                <math-source>x<sub>3</sub></math-source>
+
+        <div>
+            <math-item id="item2">
+                <math-source>A2</math-source>
+                <math-source type="type/1">B2</math-source>
             </math-item>
-        </p>
+            <p>
+                <math-item id="item3">
+                    <math-source>A3</math-source>
+                    <math-source type="type/1">B3</math-source>
+                    <math-source type="type/2">C3</math-source>
+                </math-item>
+            </p>
+        </div>
     </div>
 
     <script src="../node_modules/expect.js/index.js"></script>
     <script src="../node_modules/mocha/mocha.js"></script>
     <script>mocha.setup('bdd')</script>
-    <script src="base.js"></script>
+    <script src="base-tests.js"></script>
     <script src="sauce-report.js"></script>
 </body>
 </html>
