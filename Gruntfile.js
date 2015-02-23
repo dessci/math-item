@@ -84,7 +84,7 @@ module.exports = function(grunt) {
                 options: {
                     //username: process.env.SAUCE_USERNAME,
                     //key: process.env.SAUCE_ACCESS_KEY,
-                    urls: ['localhost:8080/test/base.html'],
+                    urls: ['localhost:8080/test/base.html', 'localhost:8080/test/base.html#wc'],
                     testname: 'math-source test',
                     browsers: [
                         ['Windows XP', 'internet explorer', 8],

@@ -7,11 +7,19 @@
     <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
     <script src="../dist/math-item.js"></script>
     <script src="base-app.js"></script>
+    <script>
+        if (location.hash === '#wc') {
+            document.write('<script src="../libs/webcomponents.js"><\/script>');
+        }
+    </script>
     <style>
-        #container {
-            margin: 1em;
+        #features, #container {
+            margin: 0.5em;
             border: 1px solid black;
-            padding: 1em;
+            padding: 0.5em;
+        }
+        #features {
+            font-size: 80%;
         }
         math-item > math-source {
             display: none;
@@ -23,6 +31,8 @@
 </head>
 <body>
     <div id="mocha"></div>
+
+    <div id="features"></div>
 
     <div id="container">
         <math-item id="item1">
@@ -45,6 +55,17 @@
         </div>
     </div>
 
+    <script>
+        (function () {
+            var features = [
+                'CustomElements polyfill: ' + (window.CustomElements ? 'Yes' : 'No'),
+                'CustomElements available: ' + (document.registerElement ? 'Yes' : 'No'),
+                'ShadowDOM polyfill: ' + (window.ShadowDOMPolyfill ? 'Yes' : 'No'),
+                'ShadowDOM available: ' + (document.createElement('div').createShadowRoot ? 'Yes' : 'No')
+            ];
+            document.querySelector('#features').innerHTML = features.join('<br>');
+        })();
+    </script>
     <script src="../node_modules/expect.js/index.js"></script>
     <script src="../node_modules/mocha/mocha.js"></script>
     <script>mocha.setup('bdd')</script>
