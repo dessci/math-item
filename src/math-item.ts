@@ -16,8 +16,8 @@ interface HTMLMathItemElementStatic {
     new (): IHTMLMathItemElement;
     prototype: IHTMLMathItemElement;
     render(): void;
-    created?(): void;
-    attached?(): void;
+    manualCreate(mathItem: IHTMLMathItemElement): void;
+    manualAttach(mathItem: IHTMLMathItemElement): void;
 }
 
 interface IHTMLMathSourceElement extends HTMLElement {
@@ -26,8 +26,8 @@ interface IHTMLMathSourceElement extends HTMLElement {
 interface HTMLMathSourceElementStatic {
     new (): IHTMLMathSourceElement;
     prototype: IHTMLMathSourceElement;
-    created?(): void;
-    attached?(): void;
+    manualCreate(mathSource: IHTMLMathSourceElement): void;
+    manualAttach(mathSource: IHTMLMathSourceElement): void;
 }
 
 interface Document {
@@ -181,7 +181,7 @@ module FlorianMath {
         if (previewSources.length) {
             el.setAttribute('state', 'preview');
             each(previewSources, (source: IHTMLMathSourceElement) => {
-                source.setAttribute('show', '');
+                source.style.display = '';
             });
         }
     }
@@ -214,29 +214,27 @@ module FlorianMath {
         return result;
     }
 
-    function mathItemCreated() {
-        var el: IHTMLMathItemElement = this;
-        if (!el.render)
-            el.render = renderProxy;
-        if (!el.getRenderElements)
-            el.getRenderElements = getRenderElements;
-        (<IHTMLMathItemElementPrivate> el)._private = {
+    function mathItemCreated(mathItem: IHTMLMathItemElement) {
+        if (!mathItem.render)
+            mathItem.render = renderProxy;
+        if (!mathItem.getRenderElements)
+            mathItem.getRenderElements = getRenderElements;
+        (<IHTMLMathItemElementPrivate> mathItem)._private = {
             updatePending: false,
             firstPass: true,
             id: counter++
         };
     }
 
-    function mathItemAttached() {
-        mathItemUpdate(<IHTMLMathItemElementPrivate> this);
+    function mathItemAttached(mathItem: IHTMLMathItemElement) {
+        mathItemUpdate(<IHTMLMathItemElementPrivate> mathItem);
     }
 
-    function mathSourceCreated() {
+    function mathSourceCreated(mathSource: IHTMLMathSourceElement) {
     }
 
-    function mathSourceAttached() {
-        var el: IHTMLMathSourceElement = this,
-            parent = el.parentElement;
+    function mathSourceAttached(mathSource: IHTMLMathSourceElement) {
+        var parent = mathSource.parentElement;
         if (parent && parent.tagName.toLowerCase() === MATH_ITEM_TAG)
             mathItemUpdate(<IHTMLMathItemElementPrivate> <any> parent);
     }
@@ -253,44 +251,47 @@ module FlorianMath {
     if (doc.registerElement) {
 
         var MathItemPrototype = Object.create(HTMLElement.prototype, {
-            createdCallback: { enumerable: true, value: mathItemCreated },
-            attachedCallback: { enumerable: true, value: mathItemAttached },
+            createdCallback: { enumerable: true, value: function () { mathItemCreated(this); } },
+            attachedCallback: { enumerable: true, value: function () { mathItemAttached(this); } },
             getRenderElements: { enumerable: true, value: getRenderElements, writable: true },
             render: { enumerable: true, value: renderProxy, writable: true }
         });
 
         var MathSourcePrototype = Object.create(HTMLElement.prototype, {
-            createdCallback: { enumerable: true, value: mathSourceCreated },
-            attachedCallback: { enumerable: true, value: mathSourceAttached }
+            createdCallback: { enumerable: true, value: function () { mathSourceCreated(this); } },
+            attachedCallback: { enumerable: true, value: function () { mathSourceAttached(this); } }
         });
 
         global.HTMLMathItemElement = doc.registerElement(FlorianMath.MATH_ITEM_TAG, { prototype: MathItemPrototype });
         global.HTMLMathSourceElement = doc.registerElement(FlorianMath.MATH_SOURCE_TAG, { prototype: MathSourcePrototype });
 
+        global.HTMLMathItemElement.manualCreate =
+        global.HTMLMathItemElement.manualAttach =
+        global.HTMLMathSourceElement.manualCreate =
+        global.HTMLMathSourceElement.manualAttach = function () { };
+
         initializedResolver();
 
     } else {
 
-        global.HTMLMathItemElement = <any> {
-            created: mathItemCreated,
-            attached: mathItemAttached
-        };
-        global.HTMLMathSourceElement = <any> {
-            created: mathSourceCreated,
-            attached: mathSourceAttached
-        };
-
         doc.createElement(FlorianMath.MATH_ITEM_TAG);
         doc.createElement(FlorianMath.MATH_SOURCE_TAG);
 
+        global.HTMLMathItemElement = <any> function () { };
+        global.HTMLMathSourceElement = <any> function () { };
+        global.HTMLMathItemElement.manualCreate = mathItemCreated;
+        global.HTMLMathItemElement.manualAttach = mathItemAttached;
+        global.HTMLMathSourceElement.manualCreate = mathSourceCreated;
+        global.HTMLMathSourceElement.manualAttach = mathSourceAttached;
+
         domReady().then(() => {
             each(doc.querySelectorAll(MATH_ITEM_TAG), (mathItem: IHTMLMathItemElement) => {
-                mathItemCreated.call(mathItem);
-                mathItemAttached.call(mathItem);
+                mathItemCreated(mathItem);
+                mathItemAttached(mathItem);
             });
             each(doc.querySelectorAll(MATH_SOURCE_TAG), (mathSource: IHTMLMathSourceElement) => {
-                mathSourceCreated.call(mathSource);
-                mathSourceAttached.call(mathSource);
+                mathSourceCreated(mathSource);
+                mathSourceAttached(mathSource);
             });
             initializedResolver();
         });
@@ -298,10 +299,9 @@ module FlorianMath {
     }
 
     global.HTMLMathItemElement.render = function () {
-        var el: IHTMLMathItemElement = this;
-        var toShow = el.getRenderElements(MIME_TYPE_HTML);
+        var toShow = (<IHTMLMathItemElement> this).getRenderElements(MIME_TYPE_HTML);
         if (toShow.length) {
-            mathItemShowSources(el, toShow);
+            mathItemShowSources(<IHTMLMathItemElement> this, toShow);
         }
     };
 

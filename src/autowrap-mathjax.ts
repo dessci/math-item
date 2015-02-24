@@ -11,28 +11,16 @@
 
     function createMathItem(attrs: {[key: string]: string}) {
         var mathItem = doc.createElement('math-item');
-        if (global.HTMLMathItemElement.created)
-            global.HTMLMathItemElement.created.call(mathItem);
+        global.HTMLMathItemElement.manualCreate(mathItem);
         setAttributes(mathItem, attrs);
         return mathItem;
     }
 
-    function attachMathItem(mathItem: IHTMLMathItemElement) {
-        if (global.HTMLMathItemElement.attached)
-            global.HTMLMathItemElement.attached.call(mathItem);
-    }
-
     function createMathSource(attrs: {[key: string]: string}) {
         var mathSource = doc.createElement('math-source');
-        if (global.HTMLMathSourceElement.created)
-            global.HTMLMathSourceElement.created.call(mathSource);
+        global.HTMLMathSourceElement.manualCreate(mathSource);
         setAttributes(mathSource, attrs);
         return mathSource;
-    }
-
-    function attachMathSource(mathSource: IHTMLMathSourceElement) {
-        if (global.HTMLMathSourceElement.attached)
-            global.HTMLMathSourceElement.attached.call(mathSource);
     }
 
     FlorianMath.domReady().then(() => {
@@ -84,8 +72,8 @@
             mathitem.appendChild(mathsrc);
 
             parent.insertBefore(mathitem, script);
-            attachMathItem(mathitem);
-            attachMathSource(mathsrc);
+            global.HTMLMathItemElement.manualAttach(mathitem);
+            global.HTMLMathSourceElement.manualAttach(mathsrc);
             output = FlorianMath.mathItemInsertContent(mathitem);
             if (preview)
                 output.element.appendChild(preview);
@@ -97,7 +85,7 @@
                 mathsrc = createMathSource({'type': 'application/mathml+xml', 'name': 'MathJax', 'usage': 'norender'});
                 mathsrc.appendChild(doc.createTextNode(mml));
                 mathitem.appendChild(mathsrc);
-                attachMathSource(mathsrc);
+                global.HTMLMathSourceElement.manualAttach(mathsrc);
             });
         }
 
