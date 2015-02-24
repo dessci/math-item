@@ -9,8 +9,12 @@ module FlorianMath {
         rejected: (reason: any) => void;
     }
 
-    export function each<T>(list: { length: number; [index: number]: T; },
-            fn: (item?: T, index?: number) => void) {
+    export interface List<T> {
+        length: number;
+        [index: number]: T;
+    }
+
+    export function each<T>(list: List<T>, fn: (item?: T, index?: number) => void) {
         for (var k = 0; k < list.length; k++) {
             fn(list[k], k);
         }

@@ -12,7 +12,8 @@ describe('math-item elements', function () {
         expect(item).to.be.ok();
         for (n = item.firstChild; n; n = n.nextSibling) {
             if (n.nodeType === 1 && (<Element> n).tagName.toLowerCase() === 'math-source') {
-                if ((<Element> n).getAttribute('show') !== null)
+                console.log(FlorianMath.getElementStyle(n, 'display'));
+                if (FlorianMath.getElementStyle(n, 'display') !== 'none')
                     showSources.push(n);
                 else
                     otherSources.push(n);

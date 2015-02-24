@@ -1,5 +1,12 @@
 /// <reference path="utils.ts" />
 
+interface ShadowRoot extends DocumentFragment { }
+
+interface HTMLElement {
+    createShadowRoot(): ShadowRoot;
+    shadowRoot: ShadowRoot;
+}
+
 interface IHTMLMathItemElement extends HTMLElement {
     getRenderElements(encoding: string): IHTMLMathSourceElement[];
     render(): void;
@@ -31,13 +38,6 @@ interface Document {
     createElement(tagName: 'math-source'): IHTMLMathSourceElement;
 }
 
-interface ShadowRoot extends DocumentFragment { }
-
-interface HTMLElement {
-    createShadowRoot(): ShadowRoot;
-    shadowRoot: ShadowRoot;
-}
-
 interface Window {
     HTMLMathItemElement: HTMLMathItemElementStatic;
     HTMLMathSourceElement: HTMLMathSourceElementStatic;
@@ -56,7 +56,7 @@ module FlorianMath {
     var global: Window = window;
     var doc: Document = document;
 
-    interface IHTMLMathItemElementPrivate extends IHTMLMathItemElement {
+    export interface IHTMLMathItemElementPrivate extends IHTMLMathItemElement {
         _private: {
             updatePending: boolean;
             firstPass: boolean;
@@ -92,7 +92,7 @@ module FlorianMath {
         var shadow: Node = el.shadowRoot;
         iterateChildren(el, (c: Node) => {
             if (c.nodeType === 1 && (<Element> c).tagName.toLowerCase() === MATH_SOURCE_TAG)
-                (<Element> c).removeAttribute('show');
+                (<HTMLElement> c).style.display = 'none';
             else
                 el.removeChild(c);
         });
@@ -121,7 +121,7 @@ module FlorianMath {
     export function mathItemShowSources(el: IHTMLMathItemElement, sources: IHTMLMathSourceElement[]) {
         mathItemClean(el);
         each(sources, (source: IHTMLMathSourceElement) => {
-            source.setAttribute('show', '');
+            source.style.display = '';
         });
         if (el.shadowRoot)
             el.shadowRoot.appendChild(document.createElement('content'));
@@ -238,13 +238,17 @@ module FlorianMath {
         var el: IHTMLMathSourceElement = this,
             parent = el.parentElement;
         if (parent && parent.tagName.toLowerCase() === MATH_ITEM_TAG)
-            mathItemUpdate(<IHTMLMathItemElementPrivate> parent);
+            mathItemUpdate(<IHTMLMathItemElementPrivate> <any> parent);
     }
 
-    var initializedPromise: IPromise<void>;
-    export function initialized() {
-        return initializedPromise;
-    }
+    var initializedResolver: () => void;
+    
+    export var initialized: () => IPromise<void> = (function () {
+        var promise = new Promise<void>((resolve: () => void) => {
+            initializedResolver = resolve;
+        });
+        return () => promise;
+    })();
 
     if (doc.registerElement) {
 
@@ -263,7 +267,7 @@ module FlorianMath {
         global.HTMLMathItemElement = doc.registerElement(FlorianMath.MATH_ITEM_TAG, { prototype: MathItemPrototype });
         global.HTMLMathSourceElement = doc.registerElement(FlorianMath.MATH_SOURCE_TAG, { prototype: MathSourcePrototype });
 
-        initializedPromise = Promise.resolve<void>();
+        initializedResolver();
 
     } else {
 
@@ -279,20 +283,16 @@ module FlorianMath {
         doc.createElement(FlorianMath.MATH_ITEM_TAG);
         doc.createElement(FlorianMath.MATH_SOURCE_TAG);
 
-        initializedPromise = new Promise<void>((resolve: () => void) => {
-            domReady().then(() => {
-                each(doc.querySelectorAll(MATH_ITEM_TAG), (item: Node) => {
-                    var mathItem = <IHTMLMathItemElement> item;
-                    mathItemCreated.call(mathItem);
-                    mathItemAttached.call(mathItem);
-                });
-                each(doc.querySelectorAll(MATH_SOURCE_TAG), (item: Node) => {
-                    var mathSource = <IHTMLMathSourceElement> item;
-                    mathSourceCreated.call(mathSource);
-                    mathSourceAttached.call(mathSource);
-                });
-                resolve();
+        domReady().then(() => {
+            each(doc.querySelectorAll(MATH_ITEM_TAG), (mathItem: IHTMLMathItemElement) => {
+                mathItemCreated.call(mathItem);
+                mathItemAttached.call(mathItem);
             });
+            each(doc.querySelectorAll(MATH_SOURCE_TAG), (mathSource: IHTMLMathSourceElement) => {
+                mathSourceCreated.call(mathSource);
+                mathSourceAttached.call(mathSource);
+            });
+            initializedResolver();
         });
 
     }
