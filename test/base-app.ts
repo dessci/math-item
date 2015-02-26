@@ -6,7 +6,7 @@
     var origRender = global.HTMLMathItemElement.render;
 
     global.HTMLMathItemElement.render = function () {
-        var sources = (<IHTMLMathItemElement> this).getRenderElements('type/1');
+        var sources = (<IHTMLMathItemElement> this).getSources({ render: true, type: 'type/1' });
         if (sources.length) {
             var output = FlorianMath.mathItemInsertContent(this), n: Node;
             for (n = sources[0].firstChild; n; n = n.nextSibling)
@@ -25,7 +25,7 @@
     var origRender = global.HTMLMathItemElement.render;
 
     global.HTMLMathItemElement.render = function () {
-        var sources = (<IHTMLMathItemElement> this).getRenderElements('type/2');
+        var sources = (<IHTMLMathItemElement> this).getSources({ render: true, type: 'type/2' });
         if (sources.length) {
             FlorianMath.mathItemShowSources(this, sources);
             return;

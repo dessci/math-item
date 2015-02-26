@@ -7,7 +7,7 @@
         var origRender = global.HTMLMathItemElement.render;
 
         global.HTMLMathItemElement.render = function () {
-            var sources = (<IHTMLMathItemElement> this).getRenderElements('image/png');
+            var sources = (<IHTMLMathItemElement> this).getSources({ render: true, type: 'image/png' });
             if (sources.length) {
                 var output = FlorianMath.mathItemInsertContent(this),
                     img = doc.createElement('img'),

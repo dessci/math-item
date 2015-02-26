@@ -8,7 +8,7 @@ interface Jax {
 
 declare var MathJax: {
     Hub: {
-        getJaxFor(id: string): Jax;
+        getJaxFor(id: string|HTMLElement): Jax;
         Register: {
             MessageHook(message: string, fn: (arg?: any) => void);
         };

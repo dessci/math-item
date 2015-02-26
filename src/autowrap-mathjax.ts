@@ -23,21 +23,21 @@
         return mathSource;
     }
 
+    function toMathML(jax: Jax, callback: (string) => void) {
+        var mml;
+        try {
+            mml = jax.root.toMathML("");
+        } catch(err) {
+            if (!err.restart) { throw err; } // an actual error
+            return MathJax.Callback.After([toMathML, jax, callback], err.restart);
+        }
+        callback(mml);
+    }
+
     FlorianMath.domReady().then(() => {
         var queue = [];
 
         if (!(MathJax && MathJax.Hub)) return;
-
-        function toMathML(jax: Jax, callback: (string) => void) {
-            var mml;
-            try {
-                mml = jax.root.toMathML("");
-            } catch(err) {
-                if (!err.restart) { throw err; } // an actual error
-                return MathJax.Callback.After([toMathML, jax, callback], err.restart);
-            }
-            callback(mml);
-        }
 
         function wrap(jax: Jax) {
             var script, parent, html, display, mimetype, preview, mathitem, mathsrc, output;
