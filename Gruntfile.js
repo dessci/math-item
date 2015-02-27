@@ -55,11 +55,11 @@ module.exports = function(grunt) {
                 tasks: ['typescript:math_item']
             },
             mathjax_tex: {
-                files: ['dist/math-item.d.ts', 'src/mathjax-tex.ts'],
+                files: ['dist/math-item.d.ts', 'src/mathjax-tex.ts', 'src/mathjax-helpers.ts'],
                 tasks: ['typescript:mathjax_tex']
             },
             mathjax_mml: {
-                files: ['dist/math-item.d.ts', 'src/mathjax-mml.ts'],
+                files: ['dist/math-item.d.ts', 'src/mathjax-mml.ts', 'src/mathjax-helpers.ts'],
                 tasks: ['typescript:mathjax_mml']
             },
             native_mml: {

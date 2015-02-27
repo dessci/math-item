@@ -1,4 +1,5 @@
 /// <reference path="utils.ts" />
+/// <reference path="mathjax.d.ts" />
 
 interface ShadowRoot extends DocumentFragment { }
 
@@ -58,8 +59,9 @@ module FlorianMath {
     export var MIME_TYPE_HTML = 'text/html';
     export var MIME_TYPE_TEX = 'application/x-tex';
     export var MIME_TYPE_MATHML = 'application/mathml+xml';
-    var global: Window = window;
-    var doc: Document = document;
+    var global: Window = window,
+        doc: Document = document,
+        counter = 0;
 
     export interface IHTMLMathItemElementPrivate extends IHTMLMathItemElement {
         _private: {
@@ -84,6 +86,23 @@ module FlorianMath {
                 fn(<IHTMLMathSourceElement> c);
         });
     }
+
+    var asyncBatch = (function () {
+        var queue = [];
+        return (fn: () => void) => {
+            queue.push(fn);
+            if (queue.length === 1) {
+                async(() => {
+                    var callbacks = queue;
+                    queue = [];
+                    console.log('async queue size', callbacks.length);
+                    each(callbacks, (gn: () => void) => {
+                        gn();
+                    });
+                });
+            }
+        };
+    })();
 
     function mathItemClean() {
         var shadow: Node = (<IHTMLMathItemElement> this).shadowRoot;
@@ -125,50 +144,6 @@ module FlorianMath {
         mathItemRenderDone(mathItem);
     }
 
-    /*function normalize(el: IHTMLMathItemElement) {
-        var nodes: Node[] = [], c = el.firstChild, t, mainMathElement,
-            trivial = true, isPreview = el.getAttribute('state') === 'preview';
-        while (c) {
-            if (c.nodeType === 1 && (<Element> c).tagName.toLowerCase() === MATH_SOURCE_TAG) {
-                c = c.nextSibling;
-            } else {
-                t = c.nextSibling;
-                nodes.push(el.removeChild(c));
-                c = t;
-            }
-        }
-        each(nodes, (c: Node) => {
-            if (c.nodeType === 1) {
-                if ((<Element> c).tagName.toLowerCase() === 'math') {
-                    if (mainMathElement) {
-                        // don't allow multiple math elements
-                        mainMathElement = undefined;
-                        trivial = false;
-                    } else
-                        mainMathElement = c;
-                } else
-                    trivial = false;
-            } else if (c.nodeType === 3 && trim(c.nodeValue) !== '') {
-                trivial = false;
-            }
-        });
-        if (mainMathElement || !trivial) {
-            var source = doc.createElement('math-source');
-            if (isPreview)
-                source.setAttribute('usage', 'preview');
-            if (mainMathElement) {
-                source.setAttribute('type', MIME_TYPE_MATHML);
-                nodes = [mainMathElement];
-            }
-            each(nodes, (n: Node) => {
-                source.appendChild(n);
-            });
-            el.appendChild(source);
-        }
-    }*/
-
-    var counter = 0;
-
     function doPreview(mathItem: IHTMLMathItemElement) {
         var previewSources = mathItem.getSources({ render: false, markup: false });
         if (previewSources.length) {
@@ -179,17 +154,17 @@ module FlorianMath {
         }
     }
 
-    function mathItemEnqueueRender(el: IHTMLMathItemElementPrivate) {
-        if (!el._private.updatePending) {
-            el._private.updatePending = true;
+    function mathItemEnqueueRender(mathItem: IHTMLMathItemElementPrivate) {
+        if (!mathItem._private.updatePending) {
+            mathItem._private.updatePending = true;
             async(() => {
-                el._private.updatePending = false;
-                if (el._private.firstPass) {
-                    el._private.firstPass = false;
+                mathItem._private.updatePending = false;
+                if (mathItem._private.firstPass) {
+                    mathItem._private.firstPass = false;
                     //normalize(el);
-                    doPreview(el);
+                    doPreview(mathItem);
                 }
-                el.render();
+                mathItem.render();
             });
         }
     }
@@ -333,6 +308,12 @@ module FlorianMath {
             initializedResolver();
         });
 
+        /*async(() => {
+            each(doc.querySelectorAll('script'), (script: HTMLScriptElement) => {
+                MathJax.Hub.Queue(['Typeset', MathJax.Hub, script]);
+            });
+        });*/
+
     }
 
     global.HTMLMathItemElement.render = function () {
@@ -342,3 +323,46 @@ module FlorianMath {
     };
 
 }
+
+    /*function normalize(el: IHTMLMathItemElement) {
+        var nodes: Node[] = [], c = el.firstChild, t, mainMathElement,
+            trivial = true, isPreview = el.getAttribute('state') === 'preview';
+        while (c) {
+            if (c.nodeType === 1 && (<Element> c).tagName.toLowerCase() === MATH_SOURCE_TAG) {
+                c = c.nextSibling;
+            } else {
+                t = c.nextSibling;
+                nodes.push(el.removeChild(c));
+                c = t;
+            }
+        }
+        each(nodes, (c: Node) => {
+            if (c.nodeType === 1) {
+                if ((<Element> c).tagName.toLowerCase() === 'math') {
+                    if (mainMathElement) {
+                        // don't allow multiple math elements
+                        mainMathElement = undefined;
+                        trivial = false;
+                    } else
+                        mainMathElement = c;
+                } else
+                    trivial = false;
+            } else if (c.nodeType === 3 && trim(c.nodeValue) !== '') {
+                trivial = false;
+            }
+        });
+        if (mainMathElement || !trivial) {
+            var source = doc.createElement('math-source');
+            if (isPreview)
+                source.setAttribute('usage', 'preview');
+            if (mainMathElement) {
+                source.setAttribute('type', MIME_TYPE_MATHML);
+                nodes = [mainMathElement];
+            }
+            each(nodes, (n: Node) => {
+                source.appendChild(n);
+            });
+            el.appendChild(source);
+        }
+    }*/
+
