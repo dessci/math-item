@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>MathJax Wrap Tests</title>
+    <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
+    <script src="../dist/math-item.js"></script>
+    <script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="../dist/autowrap-mathjax.js"></script>
+    <script>
+        if (location.hash === '#wc') {
+            document.write('<script src="../libs/webcomponents.js"><\/script>');
+        }
+    </script>
+    <style>
+        #features, #container {
+            margin: 0.5em;
+            border: 1px solid black;
+            padding: 0.5em;
+        }
+        #features {
+            font-size: 80%;
+        }
+    </style>
+</head>
+<body>
+    <div id="mocha"></div>
+
+    <div id="features"></div>
+
+    <div id="container">
+
+        <p>
+            A paragraph with TeX \(\sin(x)\) inline math.
+        </p>
+
+        \[J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\bigl({\frac{x}{2}}\bigr)}^{2 m + \alpha}\]
+
+        <p>
+            A paragraph with MathML <math><msup><mi>x</mi><mn>2</mn></msup></math> inline math.
+        </p>
+
+        <math display="block">
+            <mstyle displaystyle="true">
+                <mi>f</mi>
+                <mrow>
+                    <mo>(</mo>
+                    <mi>a</mi>
+                    <mo>)</mo>
+                </mrow>
+                <mo>=</mo>
+                <mfrac>
+                    <mn>1</mn>
+                    <mrow>
+                        <mn>2</mn>
+                        <mi>π<!-- π --></mi>
+                        <mi>i</mi>
+                    </mrow>
+                </mfrac>
+                <msub>
+                    <mo>∮</mo>
+                    <mrow>
+                        <mi>γ</mi>
+                    </mrow>
+                </msub>
+                <mfrac>
+                    <mrow>
+                        <mi>f</mi>
+                        <mo>(</mo>
+                        <mi>z</mi>
+                        <mo>)</mo>
+                    </mrow>
+                    <mrow>
+                        <mi>z</mi>
+                        <mo>−</mo>
+                        <mi>a</mi>
+                    </mrow>
+                </mfrac>
+                <mi>d</mi>
+                <mi>z</mi>
+            </mstyle>
+        </math>
+
+    </div>
+
+    <script>
+        (function () {
+            var features = [
+                'CustomElements polyfill: ' + (window.CustomElements ? 'Yes' : 'No'),
+                'CustomElements available: ' + (document.registerElement ? 'Yes' : 'No'),
+                'ShadowDOM polyfill: ' + (window.ShadowDOMPolyfill ? 'Yes' : 'No'),
+                'ShadowDOM available: ' + (document.createElement('div').createShadowRoot ? 'Yes' : 'No')
+            ];
+            document.querySelector('#features').innerHTML = features.join('<br>');
+        })();
+    </script>
+    <script src="../node_modules/expect.js/index.js"></script>
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script>mocha.setup('bdd')</script>
+    <script src="mathjax-wrap-tests.js"></script>
+    <script src="sauce-report.js"></script>
+</body>
+</html>

@@ -1,4 +1,13 @@
 module.exports = function(grunt) {
+    
+    var browsers = [
+        ['Windows XP', 'internet explorer', 8],
+        ['Windows 7', 'internet explorer', 9],
+        ['Windows 8', 'internet explorer', 10],
+        ['Windows 8.1', 'internet explorer', 11],
+        ['OS X 10.10', 'safari', 8],
+        ['Linux', 'chrome', 40]
+    ];
 
     grunt.initConfig({
         clean: {
@@ -42,7 +51,7 @@ module.exports = function(grunt) {
             autowrap_mathjax: {
                 src: ['src/autowrap-mathjax.ts'],
                 dest: 'dist/autowrap-mathjax.js',
-                options: { target: 'es3', sourceMap: true }
+                options: { target: 'es3', sourceMap: true, declaration: true }
             },
             test: {
                 src: ['test/*.ts'],
@@ -75,25 +84,23 @@ module.exports = function(grunt) {
                 tasks: ['typescript:autowrap_mathjax']
             },
             tests: {
-                files: ['test/base-app.ts', 'test/base-tests.ts'],
+                files: ['test/base-app.ts', 'test/base-tests.ts', 'test/mathjax-wrap-tests.ts'],
                 tasks: ['typescript:test']
             }
         },
         'saucelabs-mocha': {
-            all: {
+            base: {
                 options: {
-                    //username: process.env.SAUCE_USERNAME,
-                    //key: process.env.SAUCE_ACCESS_KEY,
                     urls: ['localhost:8080/test/base.html', 'localhost:8080/test/base.html#wc'],
-                    testname: 'math-source test',
-                    browsers: [
-                        ['Windows XP', 'internet explorer', 8],
-                        ['Windows 7', 'internet explorer', 9],
-                        ['Windows 8', 'internet explorer', 10],
-                        ['Windows 8.1', 'internet explorer', 11],
-                        ['OS X 10.10', 'safari', 8],
-                        ['Linux', 'chrome', 40]
-                    ]
+                    testname: 'math-item base',
+                    browsers: browsers
+                }
+            },
+            wrap: {
+                options: {
+                    urls: ['localhost:8080/test/mathjax-wrap.html'],
+                    testname: 'math-item MathJax wrap',
+                    browsers: browsers
                 }
             }
         }
@@ -109,6 +116,6 @@ module.exports = function(grunt) {
         'typescript:mathjax_mml', 'typescript:native_mml', 'typescript:eqnstore_source', 'typescript:autowrap_mathjax']);
     grunt.registerTask('build-tests', ['clean:test', 'typescript:math_item', 'typescript:test']);
     grunt.registerTask('serve', ['connect', 'watch']);
-    grunt.registerTask('test', ['build-tests', 'connect', 'saucelabs-mocha']);
+    grunt.registerTask('test', ['build-tests', 'connect', 'saucelabs-mocha:base']);
 
 };

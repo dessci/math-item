@@ -1,43 +1,62 @@
 /// <reference path="../dist/math-item.d.ts" />
 /// <reference path="mathjax.d.ts" />
 
-(function (global: Window, doc: Document) {
+module FlorianMath {
 
-    function setAttributes(el: HTMLElement, attrs: {[key: string]: string}) {
+    export interface ListenerCallback {
+        (type: string): void;
+    }
+
+    interface ListenerEntry {
+        type: string;
+        callback: ListenerCallback;
+    }
+
+    var global = window,
+        doc = document,
+        listeners: ListenerEntry[] = [];
+
+    export var AutowrapMathJax = {
+        addListener: function (type: string, callback: ListenerCallback) {
+            listeners.push({ type: type, callback: callback });
+        }
+    };
+
+    function setAttributes(el: HTMLElement, attrs: { [key: string]: string }) {
         for (var name in attrs)
             if (attrs.hasOwnProperty(name))
                 el.setAttribute(name, attrs[name]);
     }
 
-    function createMathItem(attrs: {[key: string]: string}) {
-        var mathItem = doc.createElement('math-item');
+    function createMathItem(attrs: { [key: string]: string }) {
+        var mathItem = <IHTMLMathItemElement> doc.createElement(MATH_ITEM_TAG);
         global.HTMLMathItemElement.manualCreate(mathItem);
         setAttributes(mathItem, attrs);
         return mathItem;
     }
 
-    function createMathSource(attrs: {[key: string]: string}) {
-        var mathSource = doc.createElement('math-source');
+    function createMathSource(attrs: { [key: string]: string }) {
+        var mathSource = doc.createElement(MATH_SOURCE_TAG);
         global.HTMLMathSourceElement.manualCreate(mathSource);
         setAttributes(mathSource, attrs);
         return mathSource;
     }
 
     function toMathML(jax: Jax, callback: (string) => void) {
-        var mml;
         try {
-            mml = jax.root.toMathML("");
-        } catch(err) {
-            if (!err.restart) { throw err; } // an actual error
-            return MathJax.Callback.After([toMathML, jax, callback], err.restart);
+            callback(jax.root.toMathML(""));
         }
-        callback(mml);
+        catch (err) {
+            if (!err.restart) { throw err; } // an actual error
+            MathJax.Callback.After([toMathML, jax, callback], err.restart);
+        }
     }
 
-    FlorianMath.domReady().then(() => {
+    domReady().then(() => {
         var queue = [];
 
-        if (!(MathJax && MathJax.Hub)) return;
+        if (!MathJax || !MathJax.Hub)
+            return;
 
         function wrap(jax: Jax) {
             var script, parent, html, display, mimetype, preview, mathitem, mathsrc, output;
@@ -62,19 +81,19 @@
             else
                 return;
 
-            console.log('Wrapping ' + script.id);
+            //console.log('Wrapping ' + script.id);
             if (html.previousSibling && html.previousSibling.className === 'MathJax_Preview')
                 preview = html.previousSibling;
-            mathitem = createMathItem({'display': display});
+            mathitem = createMathItem({ 'display': display });
 
-            mathsrc = createMathSource({'type': mimetype, 'usage': 'norender'});
+            mathsrc = createMathSource({ 'type': mimetype, 'usage': 'norender' });
             mathsrc.appendChild(doc.createTextNode(jax.originalText));
             mathitem.appendChild(mathsrc);
 
             parent.insertBefore(mathitem, script);
             global.HTMLMathItemElement.manualAttach(mathitem);
             global.HTMLMathSourceElement.manualAttach(mathsrc);
-            output = FlorianMath.mathItemInsertContent(mathitem);
+            output = mathItemInsertContent(mathitem);
             if (preview)
                 output.element.appendChild(preview);
             output.element.appendChild(html);
@@ -82,10 +101,18 @@
             output.done();
 
             toMathML(jax, (mml: string) => {
-                mathsrc = createMathSource({'type': 'application/mathml+xml', 'name': 'MathJax', 'usage': 'norender'});
+                mathsrc = createMathSource({ 'type': 'application/mathml+xml', 'name': 'MathJax', 'usage': 'norender' });
                 mathsrc.appendChild(doc.createTextNode(mml));
                 mathitem.appendChild(mathsrc);
                 global.HTMLMathSourceElement.manualAttach(mathsrc);
+            });
+        }
+         
+        function callListeners(type: string) {
+            var listenerCopy = Array.prototype.slice.call(listeners);
+            each(listenerCopy, (item: ListenerEntry) => {
+                if (item.type === type)
+                    item.callback(type);
             });
         }
 
@@ -95,9 +122,10 @@
         });
 
         MathJax.Hub.Register.MessageHook('End Process', function () {
-            FlorianMath.each(queue, wrap);
+            each(queue, wrap);
             queue = [];
+            callListeners('end');
         });
     });
 
-})(window, document);
+}

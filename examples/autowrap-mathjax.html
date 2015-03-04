@@ -27,13 +27,6 @@
             display: block;
             text-align: center;
         }
-        math-item > math-source {
-            display: none;
-        }
-        math-item > math-source[show] {
-            display: inline-block;
-        }
-
         #container {
             width: 60em;
             max-width: 100%;
@@ -54,7 +47,7 @@
                 <h1>Autowrap MathJax</h1>
             </div>
 
-            <div class="pure-u-2-3">
+            <div class="pure-u-2-3" id="main">
 
                 <h3>TeX</h3>
 
@@ -133,7 +126,7 @@
                 var script = document.createElement('script');
                 script.type = 'math/tex; mode=display';
                 script.text = '\\sum_{k=1}^n k^2';
-                document.querySelector('div.pure-u-2-3').appendChild(script);
+                document.querySelector('#main').appendChild(script);
                 MathJax.Hub.Queue(['Typeset', MathJax.Hub, script]);
             }, 2000);
         })();
