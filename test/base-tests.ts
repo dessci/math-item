@@ -14,40 +14,31 @@ describe('math-item elements', function () {
         return result;
     }
 
-    function itemContents(item: IHTMLMathItemElement): Node[] {
-        var showSources = [], otherSources = [], html = [], n, k;
-        expect(item).to.be.ok();
+    function visibleContents(item: IHTMLMathItemElement): Node[] {
+        var n, m, visible: Node[] = [];
+
         for (n = item.firstChild; n; n = n.nextSibling) {
             if (n.nodeType === 1 && (<Element> n).tagName.toLowerCase() === 'math-source') {
-                if (FlorianMath.getElementStyle(n, 'display') !== 'none')
-                    showSources.push(n);
-                else
-                    otherSources.push(n);
-            } else
-                html.push(n);
-        }
-        if (item.shadowRoot) {
-            var shadow = [];
-            expect(html).to.be.empty();
-            for (n = item.shadowRoot.firstChild; n; n = n.nextSibling) {
-                shadow.push(n);
-            }
-            if (showSources.length) {
-                expect(shadow).to.have.length(1);
-                expect(shadow[0].nodeType).to.be(1);
-                expect(shadow[0].tagName.toLowerCase()).to.be('content');
-            } else
-                html = shadow;
-        }
-        if (showSources.length) {
-            expect(html).to.be.empty();
-            for (k = 0; k < showSources.length; k++) {
-                for (n = showSources[k].firstChild; n; n = n.nextSibling) {
-                    html.push(n);
+                if (FlorianMath.getElementStyle(n, 'display') !== 'none') {
+                    for (m = n.firstChild; m; m = m.nextSibling)
+                        visible.push(m);
                 }
-            }
+            } else
+                visible.push(n);
         }
-        return html;
+
+        if (item.shadowRoot) {
+            var shadow: Node[] = [];
+            for (n = item.shadowRoot.firstChild; n; n = n.nextSibling) {
+                if (n.nodeType === 1 && (<Element> n).tagName.toLowerCase() === 'content')
+                    Array.prototype.push.apply(shadow, visible);
+                else
+                    shadow.push(n);
+            }
+            visible = shadow;
+        }
+
+        return visible;
     }
 
     it('global object HTMLMathItemElement', function () {
@@ -144,25 +135,25 @@ describe('math-item elements', function () {
     });
 
     it('render output', function () {
-        var item, html;
+        var item, visible;
 
         item = <HTMLElement> document.querySelector('#item1');
-        html = itemContents(item);
-        expect(html).to.have.length(1);
-        expect(html[0].nodeType).to.be(3);
-        expect(html[0].nodeValue).to.be('A1');
+        visible = visibleContents(item);
+        expect(visible).to.have.length(1);
+        expect(visible[0].nodeType).to.be(3);
+        expect(visible[0].nodeValue).to.be('A1');
 
         item = <HTMLElement> document.querySelector('#item2');
-        html = itemContents(item);
-        expect(html).to.have.length(1);
-        expect(html[0].nodeType).to.be(3);
-        expect(html[0].nodeValue).to.be('B2');
+        visible = visibleContents(item);
+        expect(visible).to.have.length(1);
+        expect(visible[0].nodeType).to.be(3);
+        expect(visible[0].nodeValue).to.be('B2');
 
         item = <HTMLElement> document.querySelector('#item3');
-        html = itemContents(item);
-        expect(html).to.have.length(1);
-        expect(html[0].nodeType).to.be(3);
-        expect(html[0].nodeValue).to.be('C3');
+        visible = visibleContents(item);
+        expect(visible).to.have.length(1);
+        expect(visible[0].nodeType).to.be(3);
+        expect(visible[0].nodeValue).to.be('C3');
     });
 
 });
