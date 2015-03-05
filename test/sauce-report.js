@@ -1,4 +1,4 @@
-onload = function () {
+function run_tests() {
     //mocha.checkLeaks();
     //mocha.globals(['foo']);
     var runner = mocha.run();

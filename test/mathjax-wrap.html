@@ -100,5 +100,10 @@
     <script>mocha.setup('bdd')</script>
     <script src="mathjax-wrap-tests.js"></script>
     <script src="sauce-report.js"></script>
+    <script>
+        MathJax.Hub.Register.StartupHook('End', function () {
+            run_tests();
+        });
+    </script>
 </body>
 </html>
