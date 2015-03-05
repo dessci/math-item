@@ -53,9 +53,12 @@ module.exports = function(grunt) {
                 dest: 'dist/autowrap-mathjax.js',
                 options: { target: 'es3', sourceMap: true, declaration: true }
             },
-            test: {
-                src: ['test/*.ts'],
+            test_d: {
+                src: ['test/base-app.ts'],
                 options: { declaration: true }
+            },
+            test: {
+                src: ['test/*.ts']
             }
         },
         watch: {
@@ -83,8 +86,12 @@ module.exports = function(grunt) {
                 files: ['dist/math-item.d.ts', 'src/autowrap-mathjax.ts'],
                 tasks: ['typescript:autowrap_mathjax']
             },
-            tests: {
-                files: ['test/base-app.ts', 'test/base-tests.ts', 'test/mathjax-wrap-tests.ts'],
+            test_d: {
+                files: ['test/base-app.ts'],
+                tasks: ['typescript:test_d']
+            },
+            test: {
+                files: ['test/base-app.d.ts', 'test/base-tests.ts', 'test/mathjax-wrap-tests.ts'],
                 tasks: ['typescript:test']
             }
         },
@@ -114,7 +121,7 @@ module.exports = function(grunt) {
 
     grunt.registerTask('default', ['clean', 'typescript:math_item', 'typescript:mathjax_tex',
         'typescript:mathjax_mml', 'typescript:native_mml', 'typescript:eqnstore_source', 'typescript:autowrap_mathjax']);
-    grunt.registerTask('build-tests', ['clean:test', 'typescript:math_item', 'typescript:test']);
+    grunt.registerTask('build-tests', ['clean:test', 'typescript:math_item', 'typescript:test_d', 'typescript:test']);
     grunt.registerTask('serve', ['connect', 'watch']);
     grunt.registerTask('test', ['build-tests', 'connect', 'saucelabs-mocha:base']);
 
