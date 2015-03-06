@@ -5,7 +5,7 @@
 
 describe('mathjax wrap', function () {
 
-    var state = 0, firstResolve, secondResolve,
+    var firstResolve, secondResolve,
         first = new FlorianMath.Promise<void>((resolve: () => void) => { firstResolve = resolve; }),
         second = new FlorianMath.Promise<void>((resolve: () => void) => { secondResolve = resolve; });
 
@@ -59,13 +59,16 @@ describe('mathjax wrap', function () {
         MathJax.Hub.Queue(['Process', MathJax.Hub, script]);
     }
 
-    FlorianMath.AutowrapMathJax.addListener('end', function () {
-        state++;
-        switch (state) {
-            case 1: firstResolve(); break;
-            case 3: secondResolve(); break;
-        }        
-    });
+    (function () {
+        var count = 0;
+        FlorianMath.addCustomEventListener(document, 'wrapped.mathjax-wrap.math-item', function () {
+            count++;
+            switch (count) {
+                case 4: firstResolve(); break;
+                case 6: secondResolve(); break;
+            }
+        });
+    })();
 
     before(function (done) {
         first.then(() => {

@@ -3,24 +3,8 @@
 
 module FlorianMath {
 
-    export interface ListenerCallback {
-        (type: string): void;
-    }
-
-    interface ListenerEntry {
-        type: string;
-        callback: ListenerCallback;
-    }
-
     var global = window,
-        doc = document,
-        listeners: ListenerEntry[] = [];
-
-    export var AutowrapMathJax = {
-        addListener: function (type: string, callback: ListenerCallback) {
-            listeners.push({ type: type, callback: callback });
-        }
-    };
+        doc = document;
 
     function setAttributes(el: HTMLElement, attrs: { [key: string]: string }) {
         for (var name in attrs)
@@ -81,7 +65,6 @@ module FlorianMath {
             else
                 return;
 
-            //console.log('Wrapping ' + script.id);
             if (html.previousSibling && html.previousSibling.className === 'MathJax_Preview')
                 preview = html.previousSibling;
             mathitem = createMathItem({ 'display': display });
@@ -99,6 +82,7 @@ module FlorianMath {
             output.element.appendChild(html);
             output.element.appendChild(script);
             output.done();
+            dispatchCustomEvent(mathitem, 'wrapped.mathjax-wrap.math-item', { bubbles: true });
 
             toMathML(jax, (mml: string) => {
                 mathsrc = createMathSource({ 'type': 'application/mathml+xml', 'name': 'MathJax', 'usage': 'norender' });
@@ -108,14 +92,6 @@ module FlorianMath {
             });
         }
          
-        function callListeners(type: string) {
-            var listenerCopy = Array.prototype.slice.call(listeners);
-            each(listenerCopy, (item: ListenerEntry) => {
-                if (item.type === type)
-                    item.callback(type);
-            });
-        }
-
         MathJax.Hub.Register.MessageHook('New Math', function (message) {
             var jax = MathJax.Hub.getJaxFor(message[1]);
             if (jax) queue.push(jax);
@@ -124,7 +100,6 @@ module FlorianMath {
         MathJax.Hub.Register.MessageHook('End Process', function () {
             each(queue, wrap);
             queue = [];
-            callListeners('end');
         });
     });
 

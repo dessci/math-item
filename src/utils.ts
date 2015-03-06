@@ -35,6 +35,12 @@ module FlorianMath {
         then(resolved: (val?: T) => void, rejected?: (reason: any) => void): IPromise<any>;
     }
 
+    export interface EventInitParams {
+        bubbles?: boolean;
+        cancelable?: boolean;
+        detail?: any
+    }
+
     // local functions
 
     function hasPromise(local) {
@@ -150,12 +156,6 @@ module FlorianMath {
         })();
 
     // Custom events
-
-    interface EventInitParams {
-        bubbles?: boolean;
-        cancelable?: boolean;
-        detail?: any
-    }
 
     function hasCustomEvent() {
         try {
