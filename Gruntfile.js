@@ -98,8 +98,15 @@ module.exports = function(grunt) {
         'saucelabs-mocha': {
             base: {
                 options: {
-                    urls: ['localhost:8080/test/base.html', 'localhost:8080/test/base.html#wc'],
+                    urls: ['localhost:8080/test/base.html'],
                     testname: 'math-item base',
+                    browsers: browsers
+                }
+            },
+            base_wc: {
+                options: {
+                    urls: ['localhost:8080/test/base.html#wc'],
+                    testname: 'math-item base webcomp',
                     browsers: browsers
                 }
             },
@@ -123,6 +130,6 @@ module.exports = function(grunt) {
         'typescript:mathjax_mml', 'typescript:native_mml', 'typescript:eqnstore_source', 'typescript:autowrap_mathjax']);
     grunt.registerTask('build-tests', ['clean:test', 'typescript:math_item', 'typescript:test_d', 'typescript:test']);
     grunt.registerTask('serve', ['connect', 'watch']);
-    grunt.registerTask('test', ['build-tests', 'connect', 'saucelabs-mocha:base']);
+    grunt.registerTask('test', ['build-tests', 'connect', 'saucelabs-mocha']);
 
 };
