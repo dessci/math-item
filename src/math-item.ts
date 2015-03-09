@@ -1,5 +1,4 @@
 /// <reference path="utils.ts" />
-/// <reference path="mathjax.d.ts" />
 
 interface ShadowRoot extends DocumentFragment { }
 
