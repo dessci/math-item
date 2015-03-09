@@ -61,7 +61,7 @@ describe('mathjax wrap', function () {
 
     (function () {
         var count = 0;
-        FlorianMath.addCustomEventListener(document, 'wrapped.mathjax-wrap.math-item', function () {
+        FlorianMath.addCustomEventListener(document, FlorianMath.WRAPPED_MATH_ITEM_EVENT, function () {
             count++;
             switch (count) {
                 case 4: firstResolve(); break;

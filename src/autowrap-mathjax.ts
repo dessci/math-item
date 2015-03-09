@@ -6,6 +6,8 @@ module FlorianMath {
     var global = window,
         doc = document;
 
+    export var WRAPPED_MATH_ITEM_EVENT = 'wrapped.math-item';
+
     function setAttributes(el: HTMLElement, attrs: { [key: string]: string }) {
         for (var name in attrs)
             if (attrs.hasOwnProperty(name))
@@ -82,7 +84,7 @@ module FlorianMath {
             output.element.appendChild(html);
             output.element.appendChild(script);
             output.done();
-            dispatchCustomEvent(mathitem, 'wrapped.mathjax-wrap.math-item', { bubbles: true });
+            dispatchCustomEvent(mathitem, WRAPPED_MATH_ITEM_EVENT, { bubbles: true });
 
             toMathML(jax, (mml: string) => {
                 mathsrc = createMathSource({ 'type': 'application/mathml+xml', 'name': 'MathJax', 'usage': 'norender' });
