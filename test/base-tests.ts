@@ -43,9 +43,11 @@ describe('math-item elements', function () {
 
     it('global object HTMLMathItemElement', function () {
         expect(window).to.have.property('HTMLMathItemElement');
-        expect(window.HTMLMathItemElement).to.have.property('render');
         expect(window.HTMLMathItemElement).to.have.property('manualCreate');
         expect(window.HTMLMathItemElement).to.have.property('manualAttach');
+        expect(window.HTMLMathItemElement.prototype).to.have.property('render');
+        expect(window.HTMLMathItemElement.prototype).to.have.property('clean');
+        expect(window.HTMLMathItemElement.prototype).to.have.property('getSources');
     });
 
     it('global object HTMLMathSourceElement', function () {

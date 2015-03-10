@@ -7,18 +7,24 @@ interface HTMLElement {
     shadowRoot: ShadowRoot;
 }
 
+interface GetSourceOptions {
+    render?: boolean;
+    markup?: boolean;
+    type?: string;
+}
+
 interface IHTMLMathItemElement extends HTMLElement {
     render(): void;
     clean(): void;
-    getSources(options?: {
-        render?: boolean;
-        markup?: boolean;
-        type?: string;
-    }): IHTMLMathSourceElement[];
+    getSources(options?: GetSourceOptions): IHTMLMathSourceElement[];
 }
 
 interface HTMLMathItemElementStatic {
-    render(): void;
+    prototype: {
+        render(): void;
+        clean(): void;
+        getSources(options?: GetSourceOptions): IHTMLMathSourceElement[];
+    }
     manualCreate(mathItem: IHTMLMathItemElement, deep?: boolean): void;
     manualAttach(mathItem: IHTMLMathItemElement, deep?: boolean): void;
 }
@@ -82,21 +88,6 @@ module FlorianMath {
         });
     }
 
-    function mathItemClean() {
-        var shadow: Node = (<IHTMLMathItemElement> this).shadowRoot;
-        iterateChildren(<IHTMLMathItemElement> this, (c: Node) => {
-            if (c.nodeType === 1 && (<Element> c).tagName.toLowerCase() === MATH_SOURCE_TAG)
-                (<HTMLElement> c).style.display = 'none';
-            else
-                (<IHTMLMathItemElement> this).removeChild(c);
-        });
-        if (shadow) {
-            iterateChildren(shadow, (c: Node) => {
-                shadow.removeChild(c);
-            });
-        }
-    }
-
     function mathItemRenderDone(mathItem: IHTMLMathItemElement) {
     }
 
@@ -144,12 +135,29 @@ module FlorianMath {
         }
     }
 
-    function renderProxy() {
-        global.HTMLMathItemElement.render.call(this);
-    }
-
     function sourceEncoding(src: IHTMLMathSourceElement) {
         return src.getAttribute('type') || MIME_TYPE_HTML;
+    }
+
+    function render() {
+        var toShow = (<IHTMLMathItemElement> this).getSources({ render: true, type: MIME_TYPE_HTML });
+        if (toShow.length)
+            mathItemShowSources(<IHTMLMathItemElement> this, toShow);
+    };
+
+    function clean() {
+        var shadow: Node = (<IHTMLMathItemElement> this).shadowRoot;
+        iterateChildren(<IHTMLMathItemElement> this, (c: Node) => {
+            if (c.nodeType === 1 && (<Element> c).tagName.toLowerCase() === MATH_SOURCE_TAG)
+                (<HTMLElement> c).style.display = 'none';
+            else
+                (<IHTMLMathItemElement> this).removeChild(c);
+        });
+        if (shadow) {
+            iterateChildren(shadow, (c: Node) => {
+                shadow.removeChild(c);
+            });
+        }
     }
 
     /*
@@ -159,7 +167,7 @@ module FlorianMath {
      * -       +       'norender'
      * +       +       ''
      */
-    function getSources(options?: { render?: boolean; markup?: boolean; type?: string; }): IHTMLMathSourceElement[] {
+    function getSources(options?: GetSourceOptions): IHTMLMathSourceElement[] {
         var result: IHTMLMathSourceElement[] = [], render, markup, encoding;
         options = options || {};
         if (options.render !== undefined) render = !!options.render;
@@ -183,37 +191,12 @@ module FlorianMath {
         };
     }
 
-    function manualItemCreate(mathItem: IHTMLMathItemElement, deep?: boolean) {
-        mathItem.render = renderProxy;
-        mathItem.clean = mathItemClean;
-        mathItem.getSources = getSources;
-        baseItemCreate.call(mathItem);
-        if (deep) {
-            iterateSourceElements(this, (source: IHTMLMathSourceElement) => {
-                manualSourceCreate(source);
-            });
-        }
-    }
-
     function baseItemAttach() {
         mathItemEnqueueRender(<IHTMLMathItemElementPrivate> this);
     }
 
-    function manualItemAttach(mathItem: IHTMLMathItemElement, deep?: boolean) {
-        baseItemAttach.call(mathItem);
-        if (deep) {
-            iterateSourceElements(this, (source: IHTMLMathSourceElement) => {
-                manualSourceAttach(source);
-            });
-        }
-    }
-
     function baseSourceCreate() {
         (<IHTMLMathSourceElement> this).style.display = 'none';
-    }
-
-    function manualSourceCreate(mathSource: IHTMLMathSourceElement) {
-        baseSourceCreate.call(mathSource);
     }
 
     function baseSourceAttach() {
@@ -223,10 +206,6 @@ module FlorianMath {
             if (parent && parent.tagName.toLowerCase() === MATH_ITEM_TAG)
                 mathItemEnqueueRender(<IHTMLMathItemElementPrivate> <IHTMLMathItemElement> parent);
         }
-    }
-
-    function manualSourceAttach(mathSource: IHTMLMathSourceElement) {
-        baseSourceAttach.call(mathSource);
     }
 
     var initializedResolver: () => void;
@@ -243,8 +222,8 @@ module FlorianMath {
         var MathItemPrototype = Object.create(HTMLElement.prototype, {
             createdCallback: { enumerable: true, value: baseItemCreate },
             attachedCallback: { enumerable: true, value: baseItemAttach },
-            render: { enumerable: true, value: renderProxy, writable: true },
-            clean: { enumerable: true, value: mathItemClean, writable: true },
+            render: { enumerable: true, value: render, writable: true },
+            clean: { enumerable: true, value: clean, writable: true },
             getSources: { enumerable: true, value: getSources, writable: true }
         });
 
@@ -265,32 +244,77 @@ module FlorianMath {
 
     } else {
 
-        doc.createElement(FlorianMath.MATH_ITEM_TAG);
-        doc.createElement(FlorianMath.MATH_SOURCE_TAG);
+        (function () {
 
-        global.HTMLMathItemElement = <any> {
-            manualCreate: manualItemCreate,
-            manualAttach: manualItemAttach
-        };
-        global.HTMLMathSourceElement = <any> {
-            manualCreate: manualSourceCreate,
-            manualAttach: manualSourceAttach
-        };
+            function renderProxy() {
+                global.HTMLMathItemElement.prototype.render.call(this);
+            }
 
-        domReady().then(() => {
-            each(doc.querySelectorAll(MATH_ITEM_TAG), (mathItem: IHTMLMathItemElement) => {
-                manualItemCreate(mathItem, true);
-                manualItemAttach(mathItem, true);
+            function cleanProxy() {
+                global.HTMLMathItemElement.prototype.clean.call(this);
+            }
+
+            function getSourcesProxy(options?: GetSourceOptions) {
+                return global.HTMLMathItemElement.prototype.getSources.call(this, options);
+            }
+
+            function manualItemCreate(mathItem: IHTMLMathItemElement, deep?: boolean) {
+                mathItem.render = renderProxy;
+                mathItem.clean = cleanProxy;
+                mathItem.getSources = getSourcesProxy;
+                baseItemCreate.call(mathItem);
+                if (deep) {
+                    iterateSourceElements(this, (source: IHTMLMathSourceElement) => {
+                        manualSourceCreate(source);
+                    });
+                }
+            }
+
+            function manualItemAttach(mathItem: IHTMLMathItemElement, deep?: boolean) {
+                baseItemAttach.call(mathItem);
+                if (deep) {
+                    iterateSourceElements(this, (source: IHTMLMathSourceElement) => {
+                        manualSourceAttach(source);
+                    });
+                }
+            }
+
+            function manualSourceCreate(mathSource: IHTMLMathSourceElement) {
+                baseSourceCreate.call(mathSource);
+            }
+
+            function manualSourceAttach(mathSource: IHTMLMathSourceElement) {
+                baseSourceAttach.call(mathSource);
+            }
+
+            doc.createElement(FlorianMath.MATH_ITEM_TAG);
+            doc.createElement(FlorianMath.MATH_SOURCE_TAG);
+
+            global.HTMLMathItemElement = <any> function () {
+                throw Error('Use document.createElement instead');
+            };
+            global.HTMLMathItemElement.manualCreate = manualItemCreate;
+            global.HTMLMathItemElement.manualAttach = manualItemAttach;
+            global.HTMLMathItemElement.prototype.render = render;
+            global.HTMLMathItemElement.prototype.clean = clean;
+            global.HTMLMathItemElement.prototype.getSources = getSources;
+
+            global.HTMLMathSourceElement = <any> function () {
+                throw Error('Use document.createElement instead');
+            };
+            global.HTMLMathSourceElement.manualCreate = manualSourceCreate;
+            global.HTMLMathSourceElement.manualAttach = manualSourceAttach;
+
+            domReady().then(() => {
+                each(doc.querySelectorAll(MATH_ITEM_TAG),(mathItem: IHTMLMathItemElement) => {
+                    manualItemCreate(mathItem, true);
+                    manualItemAttach(mathItem, true);
+                });
+                initializedResolver();
             });
-            initializedResolver();
-        });
+
+        })();
 
     }
-
-    global.HTMLMathItemElement.render = function () {
-        var toShow = (<IHTMLMathItemElement> this).getSources({ render: true, type: MIME_TYPE_HTML });
-        if (toShow.length)
-            mathItemShowSources(<IHTMLMathItemElement> this, toShow);
-    };
 
 }

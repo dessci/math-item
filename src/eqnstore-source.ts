@@ -4,9 +4,9 @@
 
     if (global.HTMLMathItemElement) {
 
-        var origRender = global.HTMLMathItemElement.render;
+        var origRender = global.HTMLMathItemElement.prototype.render;
 
-        global.HTMLMathItemElement.render = function () {
+        global.HTMLMathItemElement.prototype.render = function () {
             var sources = (<IHTMLMathItemElement> this).getSources({ render: true, type: 'image/png' });
             if (sources.length) {
                 var output = FlorianMath.mathItemInsertContent(this),

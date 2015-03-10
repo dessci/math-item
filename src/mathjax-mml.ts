@@ -15,15 +15,14 @@ module FlorianMath {
 
     if (global.HTMLMathItemElement) {
 
-        var origRender = global.HTMLMathItemElement.render;
+        var origRender = global.HTMLMathItemElement.prototype.render;
 
-        global.HTMLMathItemElement.render = function () {
+        global.HTMLMathItemElement.prototype.render = function () {
             var mathItem = <IHTMLMathItemElement> this,
                 sources = mathItem.getSources({ render: true, type: MIME_TYPE_MATHML });
             if (sources.length) {
                 var script = doc.createElement('script'),
                     output = mathItemInsertContent(this);
-
                 script.type = 'math/mml';
                 // lower case tags are important to MathJax (IE8 converts to upper case)
                 script.text = trim(tagsToLowerCase(sources[0].innerHTML));
