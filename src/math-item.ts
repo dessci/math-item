@@ -55,11 +55,14 @@ declare var HTMLMathSourceElement: HTMLMathSourceElementStatic;
 
 module FlorianMath {
 
-    export var MATH_ITEM_TAG = 'math-item';
-    export var MATH_SOURCE_TAG = 'math-source';
-    export var MIME_TYPE_HTML = 'text/html';
-    export var MIME_TYPE_TEX = 'application/x-tex';
-    export var MIME_TYPE_MATHML = 'application/mathml+xml';
+    export var
+        MATH_ITEM_TAG = 'math-item',
+        MATH_SOURCE_TAG = 'math-source',
+        MIME_TYPE_PLAIN = 'text/plain',
+        MIME_TYPE_HTML = 'text/html',
+        MIME_TYPE_TEX = 'application/x-tex',
+        MIME_TYPE_MATHML = 'application/mathml+xml';
+
     var global: Window = window,
         doc: Document = document,
         counter = 0;

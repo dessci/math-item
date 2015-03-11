@@ -55,7 +55,7 @@ module FlorianMath {
                 }));
     }
 
-    function indexOf<T>(list: T[], item: T) {
+    export function indexOf<T>(list: T[], item: T) {
         for (var k = 0; k < list.length; k++)
             if (list[k] === item)
                 return k;
