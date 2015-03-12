@@ -15,7 +15,7 @@ module FlorianMath {
     }
 
     function createMathItem(attrs: { [key: string]: string }) {
-        var mathItem = <IHTMLMathItemElement> doc.createElement(MATH_ITEM_TAG);
+        var mathItem = <HTMLMathItemElement> doc.createElement(MATH_ITEM_TAG);
         global.HTMLMathItemElement.manualCreate(mathItem);
         setAttributes(mathItem, attrs);
         return mathItem;

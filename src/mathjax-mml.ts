@@ -18,7 +18,7 @@ module FlorianMath {
         var origRender = global.HTMLMathItemElement.prototype.render;
 
         global.HTMLMathItemElement.prototype.render = function () {
-            var mathItem = <IHTMLMathItemElement> this,
+            var mathItem = <HTMLMathItemElement> this,
                 sources = mathItem.getSources({ render: true, type: MIME_TYPE_MATHML });
             if (sources.length) {
                 var script = doc.createElement('script'),

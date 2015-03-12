@@ -7,7 +7,7 @@
         var origRender = global.HTMLMathItemElement.prototype.render;
 
         global.HTMLMathItemElement.prototype.render = function () {
-            var sources = (<IHTMLMathItemElement> this).getSources({ render: true, type: 'image/png' });
+            var sources = (<HTMLMathItemElement> this).getSources({ render: true, type: 'image/png' });
             if (sources.length) {
                 var output = FlorianMath.mathItemInsertContent(this),
                     img = doc.createElement('img'),
@@ -20,9 +20,9 @@
                 if (styles.length)
                     img.setAttribute('style', styles.join(' '));
                 output.element.appendChild(img);
-                return output.done();
-            }
-            origRender.call(this);
+                output.done();
+            } else
+                origRender.call(this);
         }
 
     }

@@ -7,7 +7,7 @@
         var origRender = global.HTMLMathItemElement.prototype.render;
 
         global.HTMLMathItemElement.prototype.render = function () {
-            var sources = (<IHTMLMathItemElement> this).getSources({ render: true, type: FlorianMath.MIME_TYPE_MATHML });
+            var sources = (<HTMLMathItemElement> this).getSources({ render: true, type: FlorianMath.MIME_TYPE_MATHML });
             if (sources.length)
                 FlorianMath.mathItemShowSources(this, sources);
             else

@@ -14,7 +14,7 @@ describe('math-item elements', function () {
         return result;
     }
 
-    function visibleContents(item: IHTMLMathItemElement): Node[] {
+    function visibleContents(item: HTMLMathItemElement): Node[] {
         var n, m, visible: Node[] = [];
 
         for (n = item.firstChild; n; n = n.nextSibling) {
@@ -86,7 +86,7 @@ describe('math-item elements', function () {
 
     it('getSources', function (done) {
         FlorianMath.initialized().then(() => {
-            var item = <IHTMLMathItemElement> document.querySelector('#item4'), sources;
+            var item = <HTMLMathItemElement> document.querySelector('#item4'), sources;
 
             sources = map(item.getSources(), src => src.getAttribute('name'));
             expect(sources).to.have.length(12);

@@ -45,7 +45,7 @@ module FlorianMath {
         };
     })();
 
-    export var mathjaxAddMMLSource: (mathItem: IHTMLMathItemElement, script: HTMLScriptElement) => void = (function () {
+    export var mathjaxAddMMLSource: (mathItem: HTMLMathItemElement, script: HTMLScriptElement) => void = (function () {
         function toMathML(jax: Jax, callback: (string) => void) {
             try {
                 callback(jax.root.toMathML(''));
@@ -55,7 +55,7 @@ module FlorianMath {
             }
         }
 
-        return (mathItem: IHTMLMathItemElement, script: HTMLScriptElement) => {
+        return (mathItem: HTMLMathItemElement, script: HTMLScriptElement) => {
             var jax = MathJax.Hub.getJaxFor(script);
             if (!jax) return;
             toMathML(jax,(mml: string) => {
