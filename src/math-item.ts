@@ -63,15 +63,22 @@ module FlorianMath {
         MIME_TYPE_PLAIN = 'text/plain',
         MIME_TYPE_HTML = 'text/html',
         MIME_TYPE_TEX = 'application/x-tex',
-        MIME_TYPE_MATHML = 'application/mathml+xml';
+        MIME_TYPE_MATHML = 'application/mathml+xml',
+        RENDERING_EVENT = 'rendering.math-item',
+        RENDERED_EVENT = 'rendered.math-item',
+        ALL_RENDERED_EVENT = 'allrendered.math-item';
 
     var global: Window = window,
         doc: Document = document,
         counter = 0;
 
+    export enum RenderState {
+        Idle, Pending, Rendering
+    }
+
     export interface HTMLMathItemElementPrivate extends HTMLMathItemElement {
         _private: {
-            updatePending: boolean;
+            renderState: RenderState;
             firstPass: boolean;
             id?: number;
         };
@@ -94,9 +101,12 @@ module FlorianMath {
     }
 
     function mathItemRenderDone(mathItem: HTMLMathItemElement) {
+        (<HTMLMathItemElementPrivate> mathItem)._private.renderState = RenderState.Idle;
+        dispatchCustomEvent(mathItem, RENDERED_EVENT, { bubbles: true });
     }
 
     export function mathItemInsertContent(mathItem: HTMLMathItemElement): { element: Node; done: () => void; } {
+        (<HTMLMathItemElementPrivate> mathItem)._private.renderState = RenderState.Rendering;
         mathItem.clean();
         return {
             element: mathItem.shadowRoot || (mathItem.createShadowRoot ? mathItem.createShadowRoot() : mathItem),
@@ -107,6 +117,7 @@ module FlorianMath {
     }
 
     export function mathItemShowSources(mathItem: HTMLMathItemElement, sources: HTMLMathSourceElement[]) {
+        (<HTMLMathItemElementPrivate> mathItem)._private.renderState = RenderState.Rendering;
         mathItem.clean();
         each(sources, (source: HTMLMathSourceElement) => {
             source.style.display = '';
@@ -126,16 +137,20 @@ module FlorianMath {
     }
 
     function mathItemEnqueueRender(mathItem: HTMLMathItemElementPrivate) {
-        if (!mathItem._private.updatePending) {
-            mathItem._private.updatePending = true;
+        if (mathItem._private.renderState === RenderState.Idle) {
+            mathItem._private.renderState = RenderState.Pending;
+            dispatchCustomEvent(mathItem, RENDERING_EVENT, { bubbles: true });
             async(() => {
-                mathItem._private.updatePending = false;
                 if (mathItem._private.firstPass) {
                     mathItem._private.firstPass = false;
                     //normalize(el);
                     doPreview(mathItem);
                 }
                 mathItem.render();
+                if (mathItem._private.renderState === RenderState.Pending) {
+                    // no rendering was done, correct state
+                    mathItemRenderDone(mathItem);
+                }
             });
         }
     }
@@ -208,7 +223,7 @@ module FlorianMath {
 
     function baseItemCreate() {
         (<HTMLMathItemElementPrivate> this)._private = {
-            updatePending: false,
+            renderState: RenderState.Idle,
             firstPass: true,
             id: counter++
         };
@@ -238,6 +253,23 @@ module FlorianMath {
             initializedResolver = resolve;
         });
         return () => promise;
+    })();
+
+    (function () {
+        var balance = 1;
+
+        function renderUp() {
+            balance++;
+        }
+
+        function renderDown() {
+            if (--balance === 0)
+                dispatchCustomEvent(document, ALL_RENDERED_EVENT);
+        }
+
+        addCustomEventListener(document, RENDERING_EVENT, renderUp);
+        addCustomEventListener(document, RENDERED_EVENT, renderDown);
+        initialized().then(renderDown);
     })();
 
     if (doc.registerElement) {
