@@ -14,3 +14,4 @@ obj/
 bin
 bower.json
 bower_components
+test/base-app.d.ts
