@@ -255,21 +255,15 @@ module FlorianMath {
         return () => promise;
     })();
 
-    (function () {
-        var balance = 1;
-
-        function renderUp() {
-            balance++;
-        }
-
-        function renderDown() {
-            if (--balance === 0)
-                dispatchCustomEvent(document, ALL_RENDERED_EVENT);
-        }
-
+    export var rendering: () => boolean = (function () {
+        var balance = 0;
+        function renderUp() { balance++; }
+        function renderDown() { if (--balance === 0) dispatchCustomEvent(document, ALL_RENDERED_EVENT); }
+        renderUp();
         addCustomEventListener(document, RENDERING_EVENT, renderUp);
         addCustomEventListener(document, RENDERED_EVENT, renderDown);
         initialized().then(renderDown);
+        return () => balance !== 0;
     })();
 
     if (doc.registerElement) {
