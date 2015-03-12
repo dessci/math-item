@@ -48,6 +48,7 @@ describe('math-item elements', function () {
         expect(window.HTMLMathItemElement.prototype).to.have.property('render');
         expect(window.HTMLMathItemElement.prototype).to.have.property('clean');
         expect(window.HTMLMathItemElement.prototype).to.have.property('getSources');
+        expect(window.HTMLMathItemElement.prototype).to.have.property('getMainMarkup');
     });
 
     it('global object HTMLMathSourceElement', function () {

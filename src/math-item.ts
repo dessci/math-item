@@ -17,6 +17,7 @@ interface IHTMLMathItemElement extends HTMLElement {
     render(): void;
     clean(): void;
     getSources(options?: GetSourceOptions): IHTMLMathSourceElement[];
+    getMainMarkup(): { type: string; markup: string; };
 }
 
 interface HTMLMathItemElementStatic {
@@ -24,6 +25,7 @@ interface HTMLMathItemElementStatic {
         render(): void;
         clean(): void;
         getSources(options?: GetSourceOptions): IHTMLMathSourceElement[];
+        getMainMarkup(): { type: string; markup: string; };
     }
     manualCreate(mathItem: IHTMLMathItemElement, deep?: boolean): void;
     manualAttach(mathItem: IHTMLMathItemElement, deep?: boolean): void;
@@ -138,8 +140,13 @@ module FlorianMath {
         }
     }
 
-    function sourceEncoding(src: IHTMLMathSourceElement) {
-        return src.getAttribute('type') || MIME_TYPE_HTML;
+    export function getSourceType(source: IHTMLMathSourceElement) {
+        return source.getAttribute('type') || MIME_TYPE_HTML;
+    }
+
+    export function getSourceMarkup(source: IHTMLMathSourceElement): string {
+        var value = source.firstChild && !source.firstChild.nextSibling && source.firstChild.nodeType === 3 ? source.firstChild.nodeValue : source.innerHTML;
+        return trim(value);
     }
 
     function render() {
@@ -180,10 +187,23 @@ module FlorianMath {
             var usage = source.getAttribute('usage');
             if (render !== undefined && render === (usage === 'preview' || usage === 'norender')) return;
             if (markup !== undefined && markup === (usage === 'preview' || usage === 'nomarkup')) return;
-            if (encoding !== undefined && encoding !== sourceEncoding(source)) return;
+            if (encoding !== undefined && encoding !== getSourceType(source)) return;
             result.push(source);
         });
         return result;
+    }
+
+    var MARKUP_PREFERENCE = [MIME_TYPE_MATHML, MIME_TYPE_TEX, MIME_TYPE_HTML];
+
+    function getMainMarkup(): { type: string; markup: string; } {
+        var k, type, sources;
+        for (k = 0; k < MARKUP_PREFERENCE.length; k++) {
+            type = MARKUP_PREFERENCE[k];
+            sources = (<IHTMLMathItemElement> this).getSources({ type: type, markup: true });
+            if (sources.length)
+                return { type: type, markup: getSourceMarkup(sources[0]) };
+        }
+        return null;
     }
 
     function baseItemCreate() {
@@ -227,7 +247,8 @@ module FlorianMath {
             attachedCallback: { enumerable: true, value: baseItemAttach },
             render: { enumerable: true, value: render, writable: true },
             clean: { enumerable: true, value: clean, writable: true },
-            getSources: { enumerable: true, value: getSources, writable: true }
+            getSources: { enumerable: true, value: getSources, writable: true },
+            getMainMarkup: { enumerable: true, value: getMainMarkup, writable: true }
         });
 
         var MathSourcePrototype = Object.create(HTMLElement.prototype, {
@@ -261,10 +282,15 @@ module FlorianMath {
                 return global.HTMLMathItemElement.prototype.getSources.call(this, options);
             }
 
+            function getMainMarkup() {
+                return global.HTMLMathItemElement.prototype.getMainMarkup.call(this);
+            }
+
             function manualItemCreate(mathItem: IHTMLMathItemElement, deep?: boolean) {
                 mathItem.render = renderProxy;
                 mathItem.clean = cleanProxy;
                 mathItem.getSources = getSourcesProxy;
+                mathItem.getMainMarkup = getMainMarkup;
                 baseItemCreate.call(mathItem);
                 if (deep) {
                     iterateSourceElements(this, (source: IHTMLMathSourceElement) => {
@@ -301,6 +327,7 @@ module FlorianMath {
             global.HTMLMathItemElement.prototype.render = render;
             global.HTMLMathItemElement.prototype.clean = clean;
             global.HTMLMathItemElement.prototype.getSources = getSources;
+            global.HTMLMathItemElement.prototype.getMainMarkup = getMainMarkup;
 
             global.HTMLMathSourceElement = <any> function () {
                 throw Error('Use document.createElement instead');
