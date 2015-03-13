@@ -56,6 +56,7 @@ declare var HTMLMathItemElement: HTMLMathItemElementStatic;
 declare var HTMLMathSourceElement: HTMLMathSourceElementStatic;
 
 module FlorianMath {
+    'use strict';
 
     export var
         MATH_ITEM_TAG = 'math-item',
