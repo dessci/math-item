@@ -324,7 +324,7 @@ module FlorianMath {
                 mathItem.getMainMarkup = getMainMarkupProxy;
                 baseItemCreate.call(mathItem);
                 if (deep) {
-                    iterateSourceElements(this, (source: HTMLMathSourceElement) => {
+                    iterateSourceElements(mathItem, (source: HTMLMathSourceElement) => {
                         manualSourceCreate(source);
                     });
                 }
@@ -333,7 +333,7 @@ module FlorianMath {
             function manualItemAttach(mathItem: HTMLMathItemElement, deep?: boolean) {
                 baseItemAttach.call(mathItem);
                 if (deep) {
-                    iterateSourceElements(this, (source: HTMLMathSourceElement) => {
+                    iterateSourceElements(mathItem, (source: HTMLMathSourceElement) => {
                         manualSourceAttach(source);
                     });
                 }
