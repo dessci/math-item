@@ -68,8 +68,10 @@ module FlorianMath {
         RENDERED_EVENT = 'rendered.math-item',
         ALL_RENDERED_EVENT = 'allrendered.math-item';
 
-    var global: Window = window,
+    var MARKUP_PREFERENCE = [MIME_TYPE_MATHML, MIME_TYPE_TEX, MIME_TYPE_HTML],
+        global: Window = window,
         doc: Document = document,
+        renderBalance = 0,
         counter = 0;
 
     export enum RenderState {
@@ -82,6 +84,19 @@ module FlorianMath {
             firstPass: boolean;
             id?: number;
         };
+    }
+
+    export function rendering() {
+        return renderBalance != 0;
+    }
+
+    function renderBalanceUp() {
+        renderBalance++;
+    }
+
+    function renderBalanceDown() {
+        if (--renderBalance === 0)
+            dispatchCustomEvent(document, ALL_RENDERED_EVENT);
     }
 
     function iterateChildren(n: Node, fn: (c: Node) => void) {
@@ -103,6 +118,7 @@ module FlorianMath {
     function mathItemRenderDone(mathItem: HTMLMathItemElement) {
         (<HTMLMathItemElementPrivate> mathItem)._private.renderState = RenderState.Idle;
         dispatchCustomEvent(mathItem, RENDERED_EVENT, { bubbles: true });
+        renderBalanceDown();
     }
 
     export function mathItemInsertContent(mathItem: HTMLMathItemElement): { element: Node; done: () => void; } {
@@ -139,6 +155,7 @@ module FlorianMath {
     function mathItemEnqueueRender(mathItem: HTMLMathItemElementPrivate) {
         if (mathItem._private.renderState === RenderState.Idle) {
             mathItem._private.renderState = RenderState.Pending;
+            renderBalanceUp();
             dispatchCustomEvent(mathItem, RENDERING_EVENT, { bubbles: true });
             async(() => {
                 if (mathItem._private.firstPass) {
@@ -208,8 +225,6 @@ module FlorianMath {
         return result;
     }
 
-    var MARKUP_PREFERENCE = [MIME_TYPE_MATHML, MIME_TYPE_TEX, MIME_TYPE_HTML];
-
     function getMainMarkup(): { type: string; markup: string; } {
         var k, type, sources;
         for (k = 0; k < MARKUP_PREFERENCE.length; k++) {
@@ -255,17 +270,6 @@ module FlorianMath {
         return () => promise;
     })();
 
-    export var rendering: () => boolean = (function () {
-        var balance = 0;
-        function renderUp() { balance++; }
-        function renderDown() { if (--balance === 0) dispatchCustomEvent(document, ALL_RENDERED_EVENT); }
-        renderUp();
-        addCustomEventListener(document, RENDERING_EVENT, renderUp);
-        addCustomEventListener(document, RENDERED_EVENT, renderDown);
-        initialized().then(renderDown);
-        return () => balance !== 0;
-    })();
-
     if (doc.registerElement) {
 
         var MathItemPrototype = Object.create(HTMLElement.prototype, {
@@ -308,7 +312,7 @@ module FlorianMath {
                 return global.HTMLMathItemElement.prototype.getSources.call(this, options);
             }
 
-            function getMainMarkup() {
+            function getMainMarkupProxy() {
                 return global.HTMLMathItemElement.prototype.getMainMarkup.call(this);
             }
 
@@ -316,7 +320,7 @@ module FlorianMath {
                 mathItem.render = renderProxy;
                 mathItem.clean = cleanProxy;
                 mathItem.getSources = getSourcesProxy;
-                mathItem.getMainMarkup = getMainMarkup;
+                mathItem.getMainMarkup = getMainMarkupProxy;
                 baseItemCreate.call(mathItem);
                 if (deep) {
                     iterateSourceElements(this, (source: HTMLMathSourceElement) => {
@@ -372,5 +376,8 @@ module FlorianMath {
         })();
 
     }
+
+    renderBalanceUp();
+    initialized().then(renderBalanceDown);
 
 }
