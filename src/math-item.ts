@@ -226,15 +226,20 @@ module FlorianMath {
         return result;
     }
 
-    function getMainMarkup(): { type: string; markup: string; } {
+    export function getSourceWithTypePreference(mathItem: HTMLMathItemElement, typePref: string[]): HTMLMathSourceElement {
         var k, type, sources;
-        for (k = 0; k < MARKUP_PREFERENCE.length; k++) {
-            type = MARKUP_PREFERENCE[k];
-            sources = (<HTMLMathItemElement> this).getSources({ type: type, markup: true });
+        for (k = 0; k < typePref.length; k++) {
+            type = typePref[k];
+            sources = mathItem.getSources({ type: type, markup: true });
             if (sources.length)
-                return { type: type, markup: getSourceMarkup(sources[0]) };
+                return sources[0];
         }
         return null;
+    }
+
+    function getMainMarkup(): { type: string; markup: string; } {
+        var source = getSourceWithTypePreference(this, MARKUP_PREFERENCE);
+        return source ? { type: getSourceType(source), markup: getSourceMarkup(source) } : null;
     }
 
     function baseItemCreate() {
