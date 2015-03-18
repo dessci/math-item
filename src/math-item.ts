@@ -10,6 +10,7 @@ interface HTMLElement {
 interface GetSourceOptions {
     render?: boolean;
     markup?: boolean;
+    preview?: boolean;
     type?: string;
 }
 
@@ -144,13 +145,11 @@ module FlorianMath {
         mathItemRenderDone(mathItem);
     }
 
-    function doPreview(mathItem: HTMLMathItemElement) {
-        var previewSources = mathItem.getSources({ render: false, markup: false });
-        if (previewSources.length) {
-            each(previewSources, (source: HTMLMathSourceElement) => {
-                source.style.display = '';
-            });
-        }
+    function showPreview(mathItem: HTMLMathItemElement) {
+        var previewSources = mathItem.getSources({ preview: true });
+        each(previewSources, (source: HTMLMathSourceElement) => {
+            source.style.display = '';
+        });
     }
 
     function mathItemEnqueueRender(mathItem: HTMLMathItemElementPrivate) {
@@ -162,7 +161,7 @@ module FlorianMath {
                 if (mathItem._private.firstPass) {
                     mathItem._private.firstPass = false;
                     //normalize(el);
-                    doPreview(mathItem);
+                    showPreview(mathItem);
                 }
                 mathItem.render();
                 if (mathItem._private.renderState === RenderState.Pending) {
@@ -205,23 +204,30 @@ module FlorianMath {
 
     /*
      * render  markup  usage
-     * -       -       'preview'
-     * +       -       'nomarkup'
-     * -       +       'norender'
+     * -       -       'passive'/'preview'
+     * +       -       'render'
+     * -       +       'markup'
      * +       +       ''
      */
     function getSources(options?: GetSourceOptions): HTMLMathSourceElement[] {
-        var result: HTMLMathSourceElement[] = [], render, markup, encoding;
+        var result: HTMLMathSourceElement[] = [], render, markup, preview, encoding;
         options = options || {};
-        if (options.render !== undefined) render = !!options.render;
-        if (options.markup !== undefined) markup = !!options.markup;
+        if (options.preview !== undefined) {
+            preview = !!options.preview;
+            render = markup = false;
+        }
+        if (options.render !== undefined)
+            render = !!options.render;
+        if (options.markup !== undefined)
+            markup = !!options.markup;
         encoding = options.type;
         iterateSourceElements(this, (source: HTMLMathSourceElement) => {
             var usage = source.getAttribute('usage');
-            if (render !== undefined && render === (usage === 'preview' || usage === 'norender')) return;
-            if (markup !== undefined && markup === (usage === 'preview' || usage === 'nomarkup')) return;
-            if (encoding !== undefined && encoding !== getSourceType(source)) return;
-            result.push(source);
+            if ((preview === undefined || preview === (usage === 'preview')) &&
+                    (render === undefined || render === (!usage || usage === 'render')) &&
+                    (markup === undefined || markup === (!usage || usage === 'markup')) &&
+                    (encoding === undefined || encoding === getSourceType(source)))
+                result.push(source);
         });
         return result;
     }
